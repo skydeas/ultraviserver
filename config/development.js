@@ -1,9 +1,14 @@
 'use strict';
 /*eslint no-process-env:0*/
+const fs = require("fs");
 
 // Production specific configuration
 // =================================
 module.exports = {
+    // Private Key
+    privateKey : fs.readFileSync('./assets/private.key'),
+    // Public Key
+    publicKey : fs.readFileSync('./assets/public.key'),
     /*
     // Server IP
     ip: process.env.OPENSHIFT_NODEJS_IP
