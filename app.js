@@ -109,11 +109,11 @@ app.get("/api/userByUsername/:username", async (req, res) => {
 */
 
 // POST /login gets urlencoded bodies
-app.post('/auth/isTokenValid', function(req, res) {
+app.post('/auth/isTokenValid', async function(req, res) {
     jwt.verify(req.body.loginToken, config.privateKey, function(err, decoded) {
         // Expired tokens return error => TokenExpiredError: jwt expired
         // Malformed tokens also, let's just return false, and delete the token on another function
-        if(err){
+        if(err || decoded == undefined){
             res.json({'response':false});
         }
 
