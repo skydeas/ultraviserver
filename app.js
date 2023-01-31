@@ -61,6 +61,21 @@ app.get('/', (req, res) => {
 */
 
 /**
+ * API Route to retrieve all users from the database as a JSON object
+ * Asynchronously handles the query to the database thanks to using the connection pool,
+ * the pool.query method is a shrotcut since it handles the connection.release() for us, we
+ * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
+ */
+app.get("/api/user/getAllUsers", async (req, res) => {
+    // now get a Promise wrapped instance of that connectionPool
+
+    let response = await connectionPool.promise().execute(selectAllUsersQuery);
+
+    console.log('response: \n', response);
+    res.json(response);
+});
+
+/**
  * API Route to retrieve a specific user from the database as a JSON object
  * Asynchronously handles the query to the database thanks to using the connection pool,
  * the pool.query method is a shrotcut since it handles the connection.release() for us, we
@@ -168,6 +183,10 @@ app.post('/auth/local', function(req, res) {
         }
     });
 })
+
+/*
+* ============================ Test section ===============================
+*/
 
 // POST /login gets urlencoded bodies
 app.get('/getDataFromServer', async function(req, res) {
