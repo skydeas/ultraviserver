@@ -49,7 +49,10 @@ connectionPool.getConnection((err,connection)=> {
 */
 
 // Query for our database that returns All users from our user table, we can then append more instructions to the query to make it fit our needs
-const selectAllUsersQuery = "SELECT * FROM portal_development.table_users_development"
+const selectAllUsersQuery = 'SELECT * FROM portal_development.table_users_development'
+const countUsersQuery = 'SELECT COUNT(id) as user_count FROM portal_development.table_users_development'
+const deleteUserQuery = 'DELETE FROM portal_development.table_users_development'
+const addUserQuery = 'INSERT INTO portal_development.table_users_development (username, password, salt, hint, location, airline, active, hr_employee, role, created, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?);' 
 
 app.get('/', (req, res) => {
     res.send('Hello World!')
@@ -70,8 +73,6 @@ app.get("/api/user/getAllUsers", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
 
     let response = await connectionPool.promise().execute(selectAllUsersQuery);
-
-    console.log('response: \n', response);
     res.json(response);
 });
 
@@ -85,7 +86,7 @@ app.get("/api/userById/:id", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [users, fields] = await promisePool.query(selectAllUsersQuery +' where id=?',[req.params.id], (err, results) => {
+    const [users, fields] = await promisePool.query(selectAllUsersQuery +' WHERE id=?',[req.params.id], (err, results) => {
         if (err) throw err
         // await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -107,7 +108,7 @@ app.get("/api/userByUsername/:username", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [users, fields] = await promisePool.query(selectAllUsersQuery +' where username=?',[req.params.username], (err, results) => {
+    const [users, fields] = await promisePool.query(selectAllUsersQuery +' WHERE username=?',[req.params.username], (err, results) => {
         if (err) throw err
         // await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -117,6 +118,59 @@ app.get("/api/userByUsername/:username", async (req, res) => {
     
     // We want to return the first item in the users array, thus the indexing [0]
     res.json(users[0]);
+});
+
+/**
+ * API Route to add a user from the database.
+ * <NOT IMPLEMENTED> First we much authenticate the request and check if the user has the permission to addUser
+ * Second we must check if the username is taken.
+ * <I dont know if mysql autoincrements the ID, so if it doesnt we must check db size and manually set id>
+ * Now we must build the object with all the data necessary that is missing, ie: created: date; createdBy: <user>.
+ */
+app.post("/api/user/addUser", async (req, res) => {
+    // ============= Authentication / Validation goes here =============
+
+
+    // ============= End of validation =============
+
+    // Building the object we are going to put on our database
+    this.userToAdd = {
+        username: req.body.username,
+        password: req.body.password,
+        salt: '',
+        hint: 'None',
+        location: req.body.location,
+        airline: 'ULA', // Not implemented correctly
+        active: 'Y', // We are assuming an employee being created MUST be active, thus defaulting to Y.
+        hr_employee: 'None',
+        role: '4', // Not implemented correctly, Also it's text, not an Int
+        created: new Date(),
+        created_by: 'marco' // Not implemented Correctly, we must insert username of person making request, we will store it after verifying credentials and use it here.
+    }
+
+    // now get a Promise wrapped instance of that connectionPool
+    const promisePool = connectionPool.promise();
+
+    const [QueryResponse, fields] = await promisePool.query(addUserQuery, 
+        [   this.userToAdd.username, 
+            this.userToAdd.password, 
+            this.userToAdd.salt,
+            this.userToAdd.hint,
+            this.userToAdd.location,
+            this.userToAdd.airline,
+            this.userToAdd.active,
+            this.userToAdd.hr_employee,
+            this.userToAdd.role,
+            this.userToAdd.created,
+            this.userToAdd.created_by
+        ],(error, results) => {
+            if (error) return res.json({ error: error });
+            console.log('Results From Add Query:\n',results);
+
+            // Results are returning information about the successful Query
+            return results;
+    });
+    res.json(QueryResponse);
 });
 
 /*
@@ -146,7 +200,7 @@ app.post('/auth/local', function(req, res) {
     // Query database for user.
     
     // API Route to retrieve a specific user from the database as a JSON object
-    connectionPool.query(selectAllUsersQuery +' where username=?',[req.body.username], (err, results) => {
+    connectionPool.query(selectAllUsersQuery +' WHERE username=?',[req.body.username], (err, results) => {
         if (err) {
             console.log("Query Error: ", err);
             throw err
