@@ -51,7 +51,7 @@ connectionPool.getConnection((err,connection)=> {
 // Query for our database that returns All users from our user table, we can then append more instructions to the query to make it fit our needs
 const selectAllUsersQuery = 'SELECT * FROM portal_development.table_users_development'
 const countUsersQuery = 'SELECT COUNT(id) as user_count FROM portal_development.table_users_development'
-const deleteUserQuery = 'DELETE FROM portal_development.table_users_development'
+const deleteUserQuery = 'DELETE FROM portal_development.table_users_development WHERE id=?'
 const addUserQuery = 'INSERT INTO portal_development.table_users_development (username, password, salt, hint, location, airline, active, hr_employee, role, created, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?);' 
 const updateUserQuery = 'UPDATE  portal_development.table_users_development SET username = ?, password = ?, salt = ?, hint = ?, location = ?, airline = ?, active = ?, hr_employee = ?, role = ?, created = ?, created_by = ? WHERE id = ?' 
 
@@ -187,22 +187,6 @@ app.post("/api/user/updateUser", async (req, res) => {
     // ============= Authentication / Validation goes here =============
 
     // ============= End of validation =============
-    /*
-    // Building the object we are going to put on our database
-    this.userToUpdate = {
-        username: req.body.username,
-        password: req.body.password,
-        salt: req.body.salt,
-        hint: req.body.hint,
-        location: req.body.location,
-        airline: req.body.airline, // Not implemented correctly
-        active: req.body.active,
-        hr_employee: 'None',
-        role: '4', // Not implemented correctly, Also it's text, not an Int
-        created: new Date(),
-        created_by: 'marco' // Not implemented Correctly, we must insert username of person making request, we will store it after verifying credentials and use it here.
-    }
-    */
 
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
@@ -228,6 +212,30 @@ app.post("/api/user/updateUser", async (req, res) => {
             return results;
     });
     res.json({'response': QueryResponse, userId: _userId});
+});
+
+/**
+ * API Route to delete a user from the database.
+ * <NOT IMPLEMENTED> First we much authenticate the request and check if the user has the permission to addUser
+ * Now we must build the object with all the data necessary that is missing, ie: created: date; createdBy: <user>.
+ */
+app.post("/api/user/deleteUser", async (req, res) => {
+    // ============= Authentication / Validation goes here =============
+
+
+    // ============= End of validation =============
+
+    // now get a Promise wrapped instance of that connectionPool
+    const promisePool = connectionPool.promise();
+
+    const [QueryResponse, fields] = await promisePool.query(deleteUserQuery, [req.body.id], (error, results) => {
+            if (error) return res.json({ error: error });
+            console.log('Results From Add Query:\n',results);
+
+            // Results are returning information about the successful Delete Query
+            return results;
+    });
+    res.json(QueryResponse);
 });
 
 /*
