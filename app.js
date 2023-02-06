@@ -129,49 +129,66 @@ app.get("/api/userByUsername/:username", async (req, res) => {
  * Now we must build the object with all the data necessary that is missing, ie: created: date; createdBy: <user>.
  */
 app.post("/api/user/addUser", async (req, res) => {
-    // ============= Authentication / Validation goes here =============
+    try {
+        let _created_by = '';
+        // ============= Authentication / Validation goes here =============
 
+        // Authenticate that the token is valid, otherwise the error will be caught in the catch()
+        const decodedToken = jwt.verify(req.body.loginToken, config.publicKey);
+        _created_by = decodedToken._username;
 
-    // ============= End of validation =============
+        // Verify that the requesting user has the required role for this operations.
+        
 
-    // Building the object we are going to put on our database
-    this.userToAdd = {
-        username: req.body.username,
-        password: req.body.password,
-        salt: '',
-        hint: 'None',
-        location: req.body.location,
-        airline: 'ULA', // Not implemented correctly
-        active: 'Y', // We are assuming an employee being created MUST be active, thus defaulting to Y.
-        hr_employee: 'None',
-        role: '4', // Not implemented correctly, Also it's text, not an Int
-        created: new Date(),
-        created_by: 'marco' // Not implemented Correctly, we must insert username of person making request, we will store it after verifying credentials and use it here.
-    }
+        // ============= End of validation =============
 
-    // now get a Promise wrapped instance of that connectionPool
-    const promisePool = connectionPool.promise();
+        // Building the object we are going to put on our database
+        this.userToAdd = {
+            username: req.body.formValue.username,
+            password: req.body.formValue.password,
+            salt: '',
+            hint: 'None',
+            location: req.body.formValue.location,
+            airline: 'ULA', // Not implemented correctly
+            active: 'Y', // We are assuming an employee being created MUST be active, thus defaulting to Y.
+            hr_employee: 'None',
+            role: '4', // Not implemented correctly, Also it's text, not an Int
+            created: new Date(),
+            created_by: _created_by
+        }
 
-    const [QueryResponse, fields] = await promisePool.query(addUserQuery, 
-        [   this.userToAdd.username, 
-            this.userToAdd.password, 
-            this.userToAdd.salt,
-            this.userToAdd.hint,
-            this.userToAdd.location,
-            this.userToAdd.airline,
-            this.userToAdd.active,
-            this.userToAdd.hr_employee,
-            this.userToAdd.role,
-            this.userToAdd.created,
-            this.userToAdd.created_by
-        ],(error, results) => {
-            if (error) return res.json({ error: error });
-            console.log('Results From Add Query:\n',results);
+        console.log(this.userToAdd);
+        // now get a Promise wrapped instance of that connectionPool
+        const promisePool = connectionPool.promise();
+        /*
+        const [QueryResponse, fields] = await promisePool.query(addUserQuery, 
+            [   this.userToAdd.username, 
+                this.userToAdd.password, 
+                this.userToAdd.salt,
+                this.userToAdd.hint,
+                this.userToAdd.location,
+                this.userToAdd.airline,
+                this.userToAdd.active,
+                this.userToAdd.hr_employee,
+                this.userToAdd.role,
+                this.userToAdd.created,
+                this.userToAdd.created_by
+            ],(error, results) => {
+                if (error) return res.json({ error: error });
+                console.log('Results From Add Query:\n',results);
 
-            // Results are returning information about the successful Query
-            return results;
-    });
-    res.json(QueryResponse);
+                // Results are returning information about the successful Query
+                return results;
+        });
+
+        res.json(QueryResponse);
+        */
+        res.json({'id': 1});
+      }
+      catch (err) {
+        console.log(err.message);
+        return err;
+      }
 });
 
 
@@ -254,7 +271,7 @@ app.post('/auth/isTokenValid', async function(req, res) {
         if(decoded !== undefined){
             console.log(decoded);
             // Check if decoded == null, if so, token is invalid
-            res.json({'response':!(decoded == null)});
+            res.json({'response':!(decoded == null), 'data': decoded,});
         }
     });
 });
@@ -302,6 +319,9 @@ app.post('/auth/local', function(req, res) {
         }
     });
 })
+
+
+
 
 /*
 * ============================ Test section ===============================
