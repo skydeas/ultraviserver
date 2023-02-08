@@ -60,6 +60,12 @@ const selectAllRolesQuery = 'SELECT * FROM ' + config.databaseName + '.roles'
 const updateRoleQuery = 'UPDATE  ' + config.databaseName + '.roles SET name = ?, description = ?, created = ?, created_by = ? WHERE id = ?' 
 const addRoleQuery = 'INSERT INTO ' + config.databaseName + '.roles (name, description, created, created_by) VALUES (?,?,?,?);' 
 
+// ====== Tasks Table ======
+
+const selectAllTasksQuery = 'SELECT * FROM ' + config.databaseName + '.tasks'
+const updateTaskQuery = 'UPDATE  ' + config.databaseName + '.tasks SET description = ? WHERE id = ?' 
+const addTaskQuery = 'INSERT INTO ' + config.databaseName + '.tasks (description) VALUES (?);' 
+
 
 //#endregion
 
@@ -387,6 +393,122 @@ app.post("/api/role/updateRole", async (req, res) => {
 
 //#endregion
 
+//#region ============================ Tasks Region ============================
+
+/**
+ * API Route to retrieve all tasks from the database as a JSON object
+ * Asynchronously handles the query to the database thanks to using the connection pool,
+ * the pool.query method is a shrotcut since it handles the connection.release() for us, we
+ * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
+ */
+app.get("/api/tasks/getAllTasks", async (req, res) => {
+    // now get a Promise wrapped instance of that connectionPool
+
+    let response = await connectionPool.promise().execute(selectAllTasksQuery);
+    
+    // The response is in the format of ([data],[buff]); We will return both since we handle taking only the data in the task service
+    res.json(response);
+});
+
+/**
+ * API Route to retrieve a specific task from the database as a JSON object
+ * Asynchronously handles the query to the database thanks to using the connection pool,
+ * the pool.query method is a shrotcut since it handles the connection.release() for us, we
+ * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
+ */
+app.get("/api/task/taskById/:id", async (req, res) => {
+    // now get a Promise wrapped instance of that connectionPool
+    const promisePool = connectionPool.promise();
+
+    const [tasks, fields] = await promisePool.query(selectAllTasksQuery +' WHERE id=?',[req.params.id], (err, results) => {
+        if (err) throw err
+        // await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // Results are returned as [rows, fields], so if we only return the first result, that's our users
+        return results;
+    })
+
+    // We want to return the first item in the users array, thus the indexing [0]
+    res.json(tasks[0]);
+});
+
+/**
+ * API Route to add a task from the database.
+ * <NOT IMPLEMENTED> First we much authenticate the request and check if the user has the permission to addUser
+ * Second we must check if the username is taken.
+ * Now we must build the object with all the data necessary that is missing, ie: created: date; createdBy: <user>.
+ */
+app.post("/api/task/addTask", async (req, res) => {
+    try {
+        let _created_by = '';
+        // ============= Authentication / Validation goes here =============
+
+        // Authenticate that the token is valid, otherwise the error will be caught in the catch()
+        const decodedToken = jwt.verify(req.body.loginToken, config.publicKey);
+        _created_by = decodedToken._username;
+
+        // Verify that the requesting user has the required task for this operations.
+        
+
+        // ============= End of validation =============
+
+        // Building the object we are going to put on our database
+        this.taskToAdd = {
+            description: req.body.formValue.description,
+        }
+
+        console.log(this.taskToAdd);
+        // now get a Promise wrapped instance of that connectionPool
+        const promisePool = connectionPool.promise();
+        
+        const [QueryResponse, fields] = await promisePool.query(addTaskQuery, 
+            [   this.taskToAdd.description
+            ],(error, results) => {
+                if (error) return res.json({ error: error });
+                console.log('Results From Add Query:\n',results);
+
+                // Results are returning information about the successful Query
+                return results;
+        });
+
+        res.json(QueryResponse);
+      }
+      catch (err) {
+        console.log(err.message);
+        return err;
+      }
+});
+
+/**
+ * API Route to update a task from the database.
+ * <NOT IMPLEMENTED> First we much authenticate the request and check if the user has the permission to updateRole
+ * <I dont know if mysql autoincrements the ID, so if it doesnt we must check db size and manually set id>
+ * Now we must build the object with all the data necessary that is missing, ie: created: date; createdBy: <user>.
+ */
+app.post("/api/task/updateTask", async (req, res) => {
+    // id of the user we are updating, Storing for the redirect at the end
+    let _taskId = req.body.id;
+    // ============= Authentication / Validation goes here =============
+
+    // ============= End of validation =============
+
+    // now get a Promise wrapped instance of that connectionPool
+    const promisePool = connectionPool.promise();
+
+    const [QueryResponse, fields] = await promisePool.query(updateTaskQuery, 
+        [   req.body.description,
+            req.body.id // WHERE id = ? 
+        ],(error, results) => {
+            if (error) return res.json({ error: error });
+            console.log('Results From Update User Query:\n',results);
+
+            // Results are returning information about the successful Query
+            return results;
+    });
+    res.json({'response': QueryResponse, taskId: _taskId});
+});
+//#endregion
+
 //#region ============================ Authentication Region ===============================
 
 // POST /login gets urlencoded bodies
@@ -434,10 +556,10 @@ app.post('/auth/local', function(req, res) {
                 res.sendStatus(403); // Incorrect Response, Handle this better
                 // res.end();
             } else {
-                // Since passwords match, generate and return JWT with username, expiration timestamp of 2 hours, and role
+                // Since passwords match, generate and return JWT with username, expiration timestamp of 2 hours, and task
                 const jwtBearerToken = jwt.sign({
                     _username: currentUser[0].username,
-                    role: currentUser[0].role,
+                    task: currentUser[0].task,
                 }, config.privateKey, {
                     algorithm: 'RS256',
                     expiresIn: config.tokenMaxAge,
