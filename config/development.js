@@ -9,6 +9,7 @@ module.exports = {
     privateKey : fs.readFileSync('./assets/private.key'),
     // Public Key
     publicKey : fs.readFileSync('./assets/public.key'),
+    databaseName : 'ultravi_ulav',
     /*
     // Server IP
     ip: process.env.OPENSHIFT_NODEJS_IP
