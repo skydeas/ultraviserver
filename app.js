@@ -72,6 +72,10 @@ const addTaskQuery = 'INSERT INTO ' + config.databaseName + '.tasks (description
 const selectAllRolesTasksQuery = 'SELECT * FROM ' + config.databaseName + '.roles_tasks'
 const selectAllRolesTasksByIdQuery = 'SELECT * FROM ' + config.databaseName + '.roles_tasks WHERE role_id=?'
 
+// ====== User-Roles Table ======
+
+const selectUserRolesById = 'SELECT * FROM ' + config.databaseName + '.users_roles WHERE user_id=?'
+
 //#endregion
 
 // I am just here as remnants of an empty app, oh what simpler times.
@@ -517,7 +521,7 @@ app.post("/api/task/updateTask", async (req, res) => {
 //#region ============================ Role-Tasks Region ============================
 
 /**
- * API Route to retrieve all role-tasks from the database as a JSON object
+ * API Route to retrieve all role-tasks from the database by role_id as a JSON object
  * Asynchronously handles the query to the database thanks to using the connection pool,
  * the pool.query method is a shrotcut since it handles the connection.release() for us, we
  * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
@@ -564,6 +568,54 @@ app.post("/api/rolestasks/updateRolesTasksTable", async (req, res) => {
     res.json(response);
 });
 
+
+//#endregion
+
+//#region ============================ User-Roles Region ============================
+
+/**
+ * API Route to retrieve user-roles from the database by user_id as a JSON object
+ * Asynchronously handles the query to the database thanks to using the connection pool,
+ * the pool.query method is a shrotcut since it handles the connection.release() for us, we
+ * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
+ */
+app.get("/api/userRoles/getUserRolesById/:id", async (req, res) => {
+    let [response, buffer] = await connectionPool.promise().execute(selectUserRolesById, [req.params.id]);
+    res.json(response);
+});
+
+/**
+ * API Route to update users-roles table from the queries passed as an array
+ * Asynchronously handles the query to the database thanks to using the connection pool,
+ * the pool.query method is a shrotcut since it handles the connection.release() for us, we
+ * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
+ */
+app.post("/api/userRoles/updateUserRolesTable", async (req, res) => {
+    // req.body is the array of queries, let's perform them all
+    let newArray = [];
+
+    // Here we're preparing the sql statements by inserting the parametized database name and table names.
+    // We hid these from the front end for security reasons.
+    for (let i = 0; i <req.body.length; i++) {
+        newStr = req.body[i].replace('DATABASE_NAME', config.databaseName);
+        newStr = newStr.replace('TABLE_NAME','users_roles');
+        newArray.push(newStr);
+    }
+
+    // We're going to return an array of responses, let's initialize the return array before we fill it
+    let response = [];
+
+    // For every query in newArray, perform the query asynchronously and return the response pushed into response[]
+    for (const query of newArray ){
+        console.log('query: ', query);
+        await new Promise(async resolve => {
+            response.push(await connectionPool.promise().execute(query));
+            resolve();
+        })
+    }
+
+    res.json(response);
+});
 
 //#endregion
 
