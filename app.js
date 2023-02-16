@@ -38,34 +38,34 @@ const connectionPool = mysql.createPool({
 })
 
 // Test Connection to database
-connectionPool.getConnection((err,connection)=> {
-    if(err)
-    throw err;
+connectionPool.getConnection((err, connection) => {
+    if (err)
+        throw err;
     console.log('Database connected successfully');
     connection.release();
 });
 //#endregion
-  
+
 //#region ============================ Predefined Queries Region ===============================
 
 // ====== Users Table ======
 const selectAllUsersQuery = 'SELECT * FROM ' + config.databaseName + '.users'
 const countUsersQuery = 'SELECT COUNT(id) as user_count FROM ' + config.databaseName + '.users'
 const deleteUserQuery = 'DELETE FROM ' + config.databaseName + '.users WHERE id=?'
-const addUserQuery = 'INSERT INTO ' + config.databaseName + '.users (username, password, salt, hint, location, airline, active, hr_employee, role, created, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?);' 
-const updateUserQuery = 'UPDATE  ' + config.databaseName + '.users SET username = ?, password = ?, salt = ?, hint = ?, location = ?, airline = ?, active = ?, hr_employee = ?, role = ?, created = ?, created_by = ? WHERE id = ?' 
+const addUserQuery = 'INSERT INTO ' + config.databaseName + '.users (username, password, salt, hint, location, airline, active, hr_employee, role, created, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?);'
+const updateUserQuery = 'UPDATE  ' + config.databaseName + '.users SET username = ?, password = ?, salt = ?, hint = ?, location = ?, airline = ?, active = ?, hr_employee = ?, role = ?, created = ?, created_by = ? WHERE id = ?'
 
 // ====== Roles Table ======
 
 const selectAllRolesQuery = 'SELECT * FROM ' + config.databaseName + '.roles'
-const updateRoleQuery = 'UPDATE  ' + config.databaseName + '.roles SET name = ?, description = ?, created = ?, created_by = ? WHERE id = ?' 
-const addRoleQuery = 'INSERT INTO ' + config.databaseName + '.roles (name, description, created, created_by) VALUES (?,?,?,?);' 
+const updateRoleQuery = 'UPDATE  ' + config.databaseName + '.roles SET name = ?, description = ?, created = ?, created_by = ? WHERE id = ?'
+const addRoleQuery = 'INSERT INTO ' + config.databaseName + '.roles (name, description, created, created_by) VALUES (?,?,?,?);'
 
 // ====== Tasks Table ======
 
 const selectAllTasksQuery = 'SELECT * FROM ' + config.databaseName + '.tasks'
-const updateTaskQuery = 'UPDATE  ' + config.databaseName + '.tasks SET description = ? WHERE id = ?' 
-const addTaskQuery = 'INSERT INTO ' + config.databaseName + '.tasks (description) VALUES (?);' 
+const updateTaskQuery = 'UPDATE  ' + config.databaseName + '.tasks SET description = ? WHERE id = ?'
+const addTaskQuery = 'INSERT INTO ' + config.databaseName + '.tasks (description) VALUES (?);'
 
 // ====== Role-Tasks Table ======
 
@@ -75,6 +75,11 @@ const selectAllRolesTasksByIdQuery = 'SELECT * FROM ' + config.databaseName + '.
 // ====== User-Roles Table ======
 
 const selectUserRolesById = 'SELECT * FROM ' + config.databaseName + '.users_roles WHERE user_id=?'
+
+// ====== Authentication Queries ======
+
+const allTasksAvailableToUserById = 'SELECT tasks.* FROM tasks JOIN roles_tasks ON tasks.id = roles_tasks.task_id JOIN roles ON roles_tasks.role_id = roles.id JOIN users_roles ON roles.id = users_roles.role_id JOIN users ON users_roles.user_id = users.id WHERE users.id =?;'
+
 
 //#endregion
 
@@ -108,7 +113,7 @@ app.get("/api/user/userById/:id", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [users, fields] = await promisePool.query(selectAllUsersQuery +' WHERE id=?',[req.params.id], (err, results) => {
+    const [users, fields] = await promisePool.query(selectAllUsersQuery + ' WHERE id=?', [req.params.id], (err, results) => {
         if (err) throw err
         // await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -130,14 +135,14 @@ app.get("/api/userByUsername/:username", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [users, fields] = await promisePool.query(selectAllUsersQuery +' WHERE username=?',[req.params.username], (err, results) => {
+    const [users, fields] = await promisePool.query(selectAllUsersQuery + ' WHERE username=?', [req.params.username], (err, results) => {
         if (err) throw err
         // await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Results are returned as [rows, fields], so if we only return the first result, that's our users
         return results;
     })
-    
+
     // We want to return the first item in the users array, thus the indexing [0]
     res.json(users[0]);
 });
@@ -158,7 +163,7 @@ app.post("/api/user/addUser", async (req, res) => {
         _created_by = decodedToken._username;
 
         // Verify that the requesting user has the required role for this operations.
-        
+
 
         // ============= End of validation =============
 
@@ -180,35 +185,35 @@ app.post("/api/user/addUser", async (req, res) => {
         console.log(this.userToAdd);
         // now get a Promise wrapped instance of that connectionPool
         const promisePool = connectionPool.promise();
-        
-        const [QueryResponse, fields] = await promisePool.query(addUserQuery, 
-            [   this.userToAdd.username, 
-                this.userToAdd.password, 
-                this.userToAdd.salt,
-                this.userToAdd.hint,
-                this.userToAdd.location,
-                this.userToAdd.airline,
-                this.userToAdd.active,
-                this.userToAdd.hr_employee,
-                this.userToAdd.role,
-                this.userToAdd.created,
-                this.userToAdd.created_by
-            ],(error, results) => {
+
+        const [QueryResponse, fields] = await promisePool.query(addUserQuery,
+            [this.userToAdd.username,
+            this.userToAdd.password,
+            this.userToAdd.salt,
+            this.userToAdd.hint,
+            this.userToAdd.location,
+            this.userToAdd.airline,
+            this.userToAdd.active,
+            this.userToAdd.hr_employee,
+            this.userToAdd.role,
+            this.userToAdd.created,
+            this.userToAdd.created_by
+            ], (error, results) => {
                 if (error) return res.json({ error: error });
-                console.log('Results From Add Query:\n',results);
+                console.log('Results From Add Query:\n', results);
 
                 // Results are returning information about the successful Query
                 return results;
-        });
+            });
 
         res.json(QueryResponse);
-        
+
         // res.json({'id': 1}); commented out since we're re-enabling user add. This is for credential checking when we comment the above statement.
-      }
-      catch (err) {
+    }
+    catch (err) {
         console.log(err.message);
         return err;
-      }
+    }
 });
 
 
@@ -228,27 +233,27 @@ app.post("/api/user/updateUser", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [QueryResponse, fields] = await promisePool.query(updateUserQuery, 
-        [   req.body.username, 
-            req.body.password, 
-            req.body.salt,
-            req.body.hint,
-            req.body.location,
-            req.body.airline,
-            req.body.active,
-            req.body.hr_employee,
-            req.body.role,
-            req.body.created.slice(0, -1), // we are removing the Z at the end of the string to indicate Zulu time. This won't be needed when our objects are dates
-            req.body.created_by,
-            req.body.id // WHERE id = ? 
-        ],(error, results) => {
+    const [QueryResponse, fields] = await promisePool.query(updateUserQuery,
+        [req.body.username,
+        req.body.password,
+        req.body.salt,
+        req.body.hint,
+        req.body.location,
+        req.body.airline,
+        req.body.active,
+        req.body.hr_employee,
+        req.body.role,
+        req.body.created.slice(0, -1), // we are removing the Z at the end of the string to indicate Zulu time. This won't be needed when our objects are dates
+        req.body.created_by,
+        req.body.id // WHERE id = ? 
+        ], (error, results) => {
             if (error) return res.json({ error: error });
-            console.log('Results From Update User Query:\n',results);
+            console.log('Results From Update User Query:\n', results);
 
             // Results are returning information about the successful Query
             return results;
-    });
-    res.json({'response': QueryResponse, userId: _userId});
+        });
+    res.json({ 'response': QueryResponse, userId: _userId });
 });
 
 /**
@@ -266,11 +271,11 @@ app.post("/api/user/deleteUser", async (req, res) => {
     const promisePool = connectionPool.promise();
 
     const [QueryResponse, fields] = await promisePool.query(deleteUserQuery, [req.body.id], (error, results) => {
-            if (error) return res.json({ error: error });
-            console.log('Results From Add Query:\n',results);
+        if (error) return res.json({ error: error });
+        console.log('Results From Add Query:\n', results);
 
-            // Results are returning information about the successful Delete Query
-            return results;
+        // Results are returning information about the successful Delete Query
+        return results;
     });
     res.json(QueryResponse);
 });
@@ -288,7 +293,7 @@ app.get("/api/role/getAllRoles", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
 
     let response = await connectionPool.promise().execute(selectAllRolesQuery);
-    
+
     // The response is in the format of ([data],[buff]); We will return both since we handle taking only the data in the role service
     res.json(response);
 });
@@ -303,7 +308,7 @@ app.get("/api/role/roleById/:id", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [roles, fields] = await promisePool.query(selectAllRolesQuery +' WHERE id=?',[req.params.id], (err, results) => {
+    const [roles, fields] = await promisePool.query(selectAllRolesQuery + ' WHERE id=?', [req.params.id], (err, results) => {
         if (err) throw err
         // await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -331,7 +336,7 @@ app.post("/api/role/addRole", async (req, res) => {
         _created_by = decodedToken._username;
 
         // Verify that the requesting user has the required role for this operations.
-        
+
 
         // ============= End of validation =============
 
@@ -346,26 +351,26 @@ app.post("/api/role/addRole", async (req, res) => {
         console.log(this.roleToAdd);
         // now get a Promise wrapped instance of that connectionPool
         const promisePool = connectionPool.promise();
-        
-        const [QueryResponse, fields] = await promisePool.query(addRoleQuery, 
-            [   this.roleToAdd.name, 
-                this.roleToAdd.description, 
-                this.roleToAdd.created,
-                this.roleToAdd.created_by
-            ],(error, results) => {
+
+        const [QueryResponse, fields] = await promisePool.query(addRoleQuery,
+            [this.roleToAdd.name,
+            this.roleToAdd.description,
+            this.roleToAdd.created,
+            this.roleToAdd.created_by
+            ], (error, results) => {
                 if (error) return res.json({ error: error });
-                console.log('Results From Add Query:\n',results);
+                console.log('Results From Add Query:\n', results);
 
                 // Results are returning information about the successful Query
                 return results;
-        });
+            });
 
         res.json(QueryResponse);
-      }
-      catch (err) {
+    }
+    catch (err) {
         console.log(err.message);
         return err;
-      }
+    }
 });
 
 /**
@@ -384,20 +389,20 @@ app.post("/api/role/updateRole", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [QueryResponse, fields] = await promisePool.query(updateRoleQuery, 
-        [   req.body.name, 
-            req.body.description,
-            req.body.created.slice(0, -1), // we are removing the Z at the end of the string to indicate Zulu time. This won't be needed when our objects are dates
-            req.body.created_by,
-            req.body.id // WHERE id = ? 
-        ],(error, results) => {
+    const [QueryResponse, fields] = await promisePool.query(updateRoleQuery,
+        [req.body.name,
+        req.body.description,
+        req.body.created.slice(0, -1), // we are removing the Z at the end of the string to indicate Zulu time. This won't be needed when our objects are dates
+        req.body.created_by,
+        req.body.id // WHERE id = ? 
+        ], (error, results) => {
             if (error) return res.json({ error: error });
-            console.log('Results From Update User Query:\n',results);
+            console.log('Results From Update User Query:\n', results);
 
             // Results are returning information about the successful Query
             return results;
-    });
-    res.json({'response': QueryResponse, roleId: _roleId});
+        });
+    res.json({ 'response': QueryResponse, roleId: _roleId });
 });
 
 //#endregion
@@ -414,7 +419,7 @@ app.get("/api/tasks/getAllTasks", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
 
     let response = await connectionPool.promise().execute(selectAllTasksQuery);
-    
+
     // The response is in the format of ([data],[buff]); We will return both since we handle taking only the data in the task service
     res.json(response);
 });
@@ -429,7 +434,7 @@ app.get("/api/task/taskById/:id", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [tasks, fields] = await promisePool.query(selectAllTasksQuery +' WHERE id=?',[req.params.id], (err, results) => {
+    const [tasks, fields] = await promisePool.query(selectAllTasksQuery + ' WHERE id=?', [req.params.id], (err, results) => {
         if (err) throw err
         // await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -457,7 +462,7 @@ app.post("/api/task/addTask", async (req, res) => {
         _created_by = decodedToken._username;
 
         // Verify that the requesting user has the required task for this operations.
-        
+
 
         // ============= End of validation =============
 
@@ -469,23 +474,23 @@ app.post("/api/task/addTask", async (req, res) => {
         console.log(this.taskToAdd);
         // now get a Promise wrapped instance of that connectionPool
         const promisePool = connectionPool.promise();
-        
-        const [QueryResponse, fields] = await promisePool.query(addTaskQuery, 
-            [   this.taskToAdd.description
-            ],(error, results) => {
+
+        const [QueryResponse, fields] = await promisePool.query(addTaskQuery,
+            [this.taskToAdd.description
+            ], (error, results) => {
                 if (error) return res.json({ error: error });
-                console.log('Results From Add Query:\n',results);
+                console.log('Results From Add Query:\n', results);
 
                 // Results are returning information about the successful Query
                 return results;
-        });
+            });
 
         res.json(QueryResponse);
-      }
-      catch (err) {
+    }
+    catch (err) {
         console.log(err.message);
         return err;
-      }
+    }
 });
 
 /**
@@ -504,17 +509,17 @@ app.post("/api/task/updateTask", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     const promisePool = connectionPool.promise();
 
-    const [QueryResponse, fields] = await promisePool.query(updateTaskQuery, 
-        [   req.body.description,
-            req.body.id // WHERE id = ? 
-        ],(error, results) => {
+    const [QueryResponse, fields] = await promisePool.query(updateTaskQuery,
+        [req.body.description,
+        req.body.id // WHERE id = ? 
+        ], (error, results) => {
             if (error) return res.json({ error: error });
-            console.log('Results From Update User Query:\n',results);
+            console.log('Results From Update User Query:\n', results);
 
             // Results are returning information about the successful Query
             return results;
-    });
-    res.json({'response': QueryResponse, taskId: _taskId});
+        });
+    res.json({ 'response': QueryResponse, taskId: _taskId });
 });
 //#endregion
 
@@ -530,7 +535,7 @@ app.get("/api/rolestasks/getAllRolesTasksById/:id", async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
 
     let response = await connectionPool.promise().execute(selectAllRolesTasksByIdQuery, [req.params.id]);
-    
+
     // The response is in the format of ([data],[buff]); We will return both since we handle taking only the data in the role service
     res.json(response);
 });
@@ -547,9 +552,9 @@ app.post("/api/rolestasks/updateRolesTasksTable", async (req, res) => {
 
     // Here we're preparing the sql statements by inserting the parametized database name and table names.
     // We hid these from the front end for security reasons.
-    for (let i = 0; i <req.body.length; i++) {
+    for (let i = 0; i < req.body.length; i++) {
         newStr = req.body[i].replace('DATABASE_NAME', config.databaseName);
-        newStr = newStr.replace('TABLE_NAME','roles_tasks');
+        newStr = newStr.replace('TABLE_NAME', 'roles_tasks');
         newArray.push(newStr);
     }
 
@@ -557,7 +562,7 @@ app.post("/api/rolestasks/updateRolesTasksTable", async (req, res) => {
     let response = [];
 
     // For every query in newArray, perform the query asynchronously and return the response pushed into response[]
-    for (const query of newArray ){
+    for (const query of newArray) {
         console.log('query: ', query);
         await new Promise(async resolve => {
             response.push(await connectionPool.promise().execute(query));
@@ -596,9 +601,9 @@ app.post("/api/userRoles/updateUserRolesTable", async (req, res) => {
 
     // Here we're preparing the sql statements by inserting the parametized database name and table names.
     // We hid these from the front end for security reasons.
-    for (let i = 0; i <req.body.length; i++) {
+    for (let i = 0; i < req.body.length; i++) {
         newStr = req.body[i].replace('DATABASE_NAME', config.databaseName);
-        newStr = newStr.replace('TABLE_NAME','users_roles');
+        newStr = newStr.replace('TABLE_NAME', 'users_roles');
         newArray.push(newStr);
     }
 
@@ -606,7 +611,7 @@ app.post("/api/userRoles/updateUserRolesTable", async (req, res) => {
     let response = [];
 
     // For every query in newArray, perform the query asynchronously and return the response pushed into response[]
-    for (const query of newArray ){
+    for (const query of newArray) {
         console.log('query: ', query);
         await new Promise(async resolve => {
             response.push(await connectionPool.promise().execute(query));
@@ -621,30 +626,35 @@ app.post("/api/userRoles/updateUserRolesTable", async (req, res) => {
 
 //#region ============================ Authentication Region ===============================
 
-// POST /login gets urlencoded bodies
-app.post('/auth/isTokenValid', async function(req, res) {
-    jwt.verify(req.body.loginToken, config.privateKey, function(err, decoded) {
-        // Expired tokens return error => TokenExpiredError: jwt expired
-        // Malformed tokens also, let's just return false, and delete the token on another function
-        if(err || decoded == undefined){
-            res.json({'response':false});
-        }
-
-        if(decoded !== undefined){
-            console.log(decoded);
-            // Check if decoded == null, if so, token is invalid
-            res.json({'response':!(decoded == null), 'data': decoded,});
-        }
+// Extracted the functionality of the route '/auth/isTokenValid' as a function so I can use it in other places.
+isTokenValid = async (token) => {
+    return new Promise((resolve, reject) => {
+        jwt.verify(token, config.privateKey, (err, decoded) => {
+            if (err || decoded == undefined) {
+                resolve({ 'response': false });
+            }
+            if (decoded !== undefined) {
+                console.log(decoded);
+                resolve({ 'response': !(decoded == null), 'data': decoded, });
+            }
+        });
     });
+}
+
+
+// POST /login gets urlencoded bodies
+app.post('/auth/isTokenValid', async function (req, res) {
+    isValidResponse = await isTokenValid(req.body.loginToken);
+    res.json(isValidResponse);
 });
 
 // POST /login gets urlencoded bodies
-app.post('/auth/local', function(req, res) {
+app.post('/auth/local', function (req, res) {
     var currentUser;
     // Query database for user.
-    
+
     // API Route to retrieve a specific user from the database as a JSON object
-    connectionPool.query(selectAllUsersQuery +' WHERE username=?',[req.body.username], (err, results) => {
+    connectionPool.query(selectAllUsersQuery + ' WHERE username=?', [req.body.username], (err, results) => {
         if (err) {
             console.log("Query Error: ", err);
             throw err
@@ -653,14 +663,14 @@ app.post('/auth/local', function(req, res) {
         currentUser = results;
 
         // If user does not exist, handle and return error
-        if(currentUser === undefined || currentUser.length == 0){
+        if (currentUser === undefined || currentUser.length == 0) {
             console.log('User does not exist in database; Handle This error');
             res.sendStatus(403); // Incorrect Response, Handle this better
             // res.end();
         } else {
-            
+
             // Since user exists, compare password of QueriedUser.password with req.body.password
-            if(currentUser[0].password !== req.body.password){
+            if (currentUser[0].password !== req.body.password) {
                 console.log('Passwords do NOT match; Handle this error');
                 // If passwords do not match, handle and return error
                 res.sendStatus(403); // Incorrect Response, Handle this better
@@ -669,16 +679,43 @@ app.post('/auth/local', function(req, res) {
                 // Since passwords match, generate and return JWT with username, expiration timestamp of 2 hours, and task
                 const jwtBearerToken = jwt.sign({
                     _username: currentUser[0].username,
+                    _id: currentUser[0].id,
                     task: currentUser[0].task,
                 }, config.privateKey, {
                     algorithm: 'RS256',
                     expiresIn: config.tokenMaxAge,
                 });
-                
+
                 // Return signed token
                 res.json(jwtBearerToken);
             }
         }
+    });
+})
+
+/**
+ * Authenticates requests based on user_id and task_id
+ * returns true or false
+ */
+app.post('/auth/authenticateRequest', async function (req, res) {
+    isValidResponse = await isTokenValid(req.body.loginToken);
+
+    // API Route to get all tasks available to the ID passed in the parameter.
+    connectionPool.query(allTasksAvailableToUserById, [isValidResponse.data._id], (err, results) => { //Hard Coding the ID to 1 for testing
+        if (err) {
+            console.log("Query Error: ", err);
+            throw err
+        }
+        // console.log('Tasks Available: \n', results);
+        // Check if our task_id passed in as a parameter matches and of the task_id that way we can authenticate
+        for (let i = 0; i < results.length; i++) {
+            if (results[i].id === req.body.task_id) {
+                res.json({ 'response': true });
+                return;
+            }
+        }
+        res.json({ 'response': false });
+        return;
     });
 })
 //#endregion
@@ -686,7 +723,7 @@ app.post('/auth/local', function(req, res) {
 //#region ============================ Test Region ===============================
 
 // POST /login gets urlencoded bodies
-app.get('/getDataFromServer', async function(req, res) {
+app.get('/getDataFromServer', async function (req, res) {
     await new Promise(resolve => setTimeout(resolve, 5000));
     res.json({
         'Super Secret Data': 'Payload'
