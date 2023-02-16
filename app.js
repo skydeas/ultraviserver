@@ -96,9 +96,9 @@ app.get('/', (req, res) => {
  * the pool.query method is a shrotcut since it handles the connection.release() for us, we
  * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
  */
-app.get("/api/user/getAllUsers", async (req, res) => {
+app.get("/api/user/getAllUsers", authenticateRequest(1), async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
-
+    //console.log('logintoken:  ', req.headers.logintoken);
     let response = await connectionPool.promise().execute(selectAllUsersQuery);
     res.json(response);
 });
@@ -742,6 +742,46 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
 });
+
+// ============================ Middleware Region ===============================
+
+
+/**
+ * This function is a middleware to ensure that the required route is protected.
+ * We verify that the user making the request has the task assigned to them to ensure
+ * that they can perform this request
+ */
+function authenticateRequest(task_id) {
+    return function (req, res, next) {
+        // console.log(req.headers.logintoken);
+
+        jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+            if (err || decoded == undefined) {
+                return res.status(500).send({ message: 'Bad Token' });
+            }
+            if (decoded !== undefined) {
+                // API Route to get all tasks available to the ID passed in the parameter.
+                connectionPool.query(allTasksAvailableToUserById, [decoded._id], (err, results) => {
+                    if (err) {
+                        console.log("Query Error: ", err);
+                        return res.status(500).send({ message: 'Internal Server Error' });
+                    }
+
+                    // Check if our task_id parameter matches any of the task_ids returned by the query
+                    const foundTask = results.find(task => task.id === task_id);
+                    if (foundTask) {
+                        // Task is authorized, move on to the next middleware
+                        next();
+                    } else {
+                        // Task is not authorized, return an error response
+                        return res.status(403).send({ message: 'Forbidden' });
+                    }
+                });
+            }
+        })
+    }
+}
+
 
 // Remove me one development starts, this is for testing request parameters in the API
 // console.log("Request: \n" + util.inspect(req.params, {showHidden: false, depth: null, colors: true}))
