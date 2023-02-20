@@ -724,6 +724,30 @@ app.post('/auth/authenticateRequest', async function (req, res) {
         return;
     });
 })
+
+/**
+ * Authenticates requests based on user_id and task_id
+ * returns true or false
+ */
+app.post('/auth/getTasksById', async function (req, res) {
+    isValidResponse = await isTokenValid(req.body.loginToken);
+
+    if(isValidResponse.response == false){
+        // Token not valid, handle:
+        res.json({ 'response': false });
+        return;
+    }
+
+    // API Route to get all tasks available to the ID passed in the parameter.
+    connectionPool.query(allTasksAvailableToUserById, [isValidResponse.data._id], (err, results) => { //Hard Coding the ID to 1 for testing
+        if (err) {
+            console.log("Query Error: ", err);
+            throw err
+        }
+        res.json(results);
+        return;
+    });
+})
 //#endregion
 
 //#region ============================ Test Region ===============================
