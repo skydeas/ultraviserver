@@ -5,7 +5,6 @@ const fs = require("fs");
 // Defined the database name here so we can use it in this file as well, If we need to change database Name.
 const databaseName = 'ultravi_ulav';
 
-
 // Production specific configuration
 // =================================
 module.exports = {
@@ -37,26 +36,27 @@ module.exports = {
         // ====== Authentication Queries ======
         allTasksAvailableToUserById : 'SELECT tasks.* FROM tasks JOIN roles_tasks ON tasks.id = roles_tasks.task_id JOIN roles ON roles_tasks.role_id = roles.id JOIN users_roles ON roles.id = users_roles.role_id JOIN users ON users_roles.user_id = users.id WHERE users.id =?;',
     },
-
-    /*
-    // Server IP
-    ip: process.env.OPENSHIFT_NODEJS_IP
-        || process.env.ip
-        || undefined,
-
-    // Server port
-    port: process.env.OPENSHIFT_NODEJS_PORT
-        || process.env.PORT
-        || 8080,
-
-    // MongoDB connection options
-    mongo: {
-        useMongoClient: true,
-        uri: process.env.MONGODB_URI
-            || process.env.MONGOHQ_URL
-            || process.env.OPENSHIFT_MONGODB_DB_URL + process.env.OPENSHIFT_APP_NAME
-            || 'mongodb://localhost/trailcrew-dev'
-    },
-    */
     tokenMaxAge: ('2h') // 2 hours
 };
+
+
+/*
+// Server IP
+ip: process.env.OPENSHIFT_NODEJS_IP
+    || process.env.ip
+    || undefined,
+
+// Server port
+port: process.env.OPENSHIFT_NODEJS_PORT
+    || process.env.PORT
+    || 8080,
+
+// MongoDB connection options
+mongo: {
+    useMongoClient: true,
+    uri: process.env.MONGODB_URI
+        || process.env.MONGOHQ_URL
+        || process.env.OPENSHIFT_MONGODB_DB_URL + process.env.OPENSHIFT_APP_NAME
+        || 'mongodb://localhost/trailcrew-dev'
+},
+*/

@@ -1,8 +1,8 @@
-
 const express = require('express');
 const router = express.Router();
 const config = require('../../config/development');
 const mysql = require('mysql2');
+const auth = require('../../auth/');
 
 const connectionPool = mysql.connectionPool;
 
@@ -12,7 +12,7 @@ const connectionPool = mysql.connectionPool;
  * the pool.query method is a shrotcut since it handles the connection.release() for us, we
  * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
  */
-router.get("/getAllUsers", async (req, res) => {
+router.get("/getAllUsers", auth.authenticateRequest(1),async (req, res) => {
     // now get a Promise wrapped instance of that connectionPool
     //console.log('logintoken:  ', req.headers.logintoken);
     let response = await connectionPool.promise().execute(config.queries.selectAllUsersQuery);
