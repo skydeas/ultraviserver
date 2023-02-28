@@ -45,7 +45,7 @@ module.exports = {
         {categoryName: "General Operations Manual", docname: "GOM", task_id: 12},
         {categoryName: "General Operations Manual Forms", docname: "GOMF", task_id: 13},
         {categoryName: "Dangerous Goods Regulations", docname: "DGR", task_id: 14},
-        {categoryName: "Airport Manuals & Guides", docname: "KMANUAL", task_id: 15},
+        {categoryName: "Airport Manuals & Guides", docname: "KMANUALS", task_id: 15},
         {categoryName: "Safety Bulletins", docname: "SFTB", task_id: 16},
     ],
 };
