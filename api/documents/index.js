@@ -8,14 +8,21 @@ const auth = require('../../auth/');
 const connectionPool = mysql.connectionPool;
 
 /**
- * API Route to retrieve all users from the database as a JSON object
+ * API Route to retrieve all documents from the database as a JSON object
  * Asynchronously handles the query to the database thanks to using the connection pool,
- * the pool.query method is a shrotcut since it handles the connection.release() for us, we
- * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
+ * It returns the documents the user has access to. 
+ * 1. veirfy JWT and store user_id
+ * 2. get tasks available to by user_id
+ * 3. create document query based on those tasks using config.docmanuals
+ * 4. return either a 403 if no docs, or the docs the user has access to
+ * ==== change ====
+ * Response is now going to be two items, the docmanuals filtered, and the results from the db, in the same JSON
+ * Will change the front end to consume this effectively.
  */
 router.get("/getDocuments", async (req, res) => {
     let conditions = '';
     let responseSent = false;
+    let filteredDocManuals = [];
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
@@ -42,8 +49,8 @@ router.get("/getDocuments", async (req, res) => {
 
                 for(let index = 0; index < config.documentationManuals.length; index ++){
                     const foundTask = results.find(task => task.id === config.documentationManuals[index].task_id);
-
                     if(foundTask){
+                        filteredDocManuals.push(config.documentationManuals[index]);
                         if(firstItem){
                             conditions = conditions+' WHERE ';
                             firstItem = false;
@@ -55,12 +62,14 @@ router.get("/getDocuments", async (req, res) => {
                     }
                 }
 
+                // If there are no conditions after the previous for, return nothing, as otherwise the query would go through and get ALL of the documents.
                 if (conditions == '') {
                     console.log("User does not have permission to view any documents");
                     responseSent = true;
                     return res.status(403).send({});
                 }
 
+                // Check if a response was sent, and if not, return the correct data 
                 if(!responseSent){
                     connectionPool.query(config.queries.selectAllDocumentsQuery + conditions, (err, response) => {
                         if (err) {
@@ -68,8 +77,8 @@ router.get("/getDocuments", async (req, res) => {
                             responseSent = true;
                             return res.status(500).send({ message: 'Internal Server Error' });
                         }
-                        console.log(response);
-                        res.json(response);
+                        // console.log(response);
+                        res.json({'filteredDocumentation': response, 'filteredDocumentationManuals': filteredDocManuals});
                     });  
                 }
             });
