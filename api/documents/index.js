@@ -8,7 +8,7 @@ const auth = require('../../auth/');
 const connectionPool = mysql.connectionPool;
 
 /**
- * API Route to retrieve all documents from the database as a JSON object
+ * API Route to retrieve the documents from the database as a JSON object the user has acces to
  * Asynchronously handles the query to the database thanks to using the connection pool,
  * It returns the documents the user has access to. 
  * 1. veirfy JWT and store user_id
@@ -69,9 +69,10 @@ router.get("/getDocuments", async (req, res) => {
                     return res.status(403).send({});
                 }
 
+                // Appending ORDER BY seq at the end of the query to order by squence to see if it works
                 // Check if a response was sent, and if not, return the correct data 
                 if(!responseSent){
-                    connectionPool.query(config.queries.selectAllDocumentsQuery + conditions, (err, response) => {
+                    connectionPool.query(config.queries.selectAllDocumentsQuery + conditions + "ORDER BY seq", (err, response) => {
                         if (err) {
                             console.log("Query Error: ", err);
                             responseSent = true;
