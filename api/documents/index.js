@@ -4,6 +4,8 @@ const config = require('../../config/development');
 const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
 const auth = require('../../auth/');
+const fs = require('fs');
+const path = require('path');
 
 const connectionPool = mysql.connectionPool;
 
@@ -93,6 +95,28 @@ router.get("/getDocuments", async (req, res) => {
  */
 router.get("/getDocumentationManuals",async (req, res) => {
     res.json(config.documentationManuals);
+});
+
+/**
+ * API Route to send the document back to the user.
+ */
+router.get("/requestFile/:docname/:pnom",async (req, res) => {
+    /*
+    let filePath = '/assets/documentation/';
+    filePath = filePath + req.params.docname + '/' + req.params.pnom;
+    */
+
+    let filePath = path.join(__dirname, '../../assets/documentation/' + req.params.docname + '/' + req.params.pnom);
+    // console.log(req.params.docname + '/' + req.params.pnom);
+    // res.sendFile(filePath, { root: '.' });
+
+    // Set the response headers to indicate that the content should be treated as an attachment
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=' + req.params.pnom);
+
+    // Read the PDF file from disk and stream it to the response
+    const fileStream = fs.createReadStream(filePath, { root: __dirname });
+    fileStream.pipe(res);
 });
 
 module.exports = router;
