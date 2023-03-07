@@ -37,6 +37,8 @@ module.exports = {
         allTasksAvailableToUserById : 'SELECT tasks.* FROM tasks JOIN roles_tasks ON tasks.id = roles_tasks.task_id JOIN roles ON roles_tasks.role_id = roles.id JOIN users_roles ON roles.id = users_roles.role_id JOIN users ON users_roles.user_id = users.id WHERE users.id =?;',
         // ====== Documents Table ======
         selectAllDocumentsQuery : 'SELECT * FROM ' + databaseName + '.documents',
+        addDocumentQuery : 'INSERT INTO ' + databaseName + '.documents (seq, docname, pnom, title, active, effective, updated) VALUES (?,?,?,?,?,?,?);',
+
     },
     tokenMaxAge: ('2h'), // 2 hours
     // Array of objects for the manuals (different sections) in our database. If needed we can make this a database object.

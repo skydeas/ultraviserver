@@ -7,6 +7,21 @@ const auth = require('../../auth/');
 const fs = require('fs');
 const path = require('path');
 
+
+//#region ================== MULTER CONFIG ========================
+const multer  = require('multer')
+// configure multer middleware to store files in a directory called "uploads"
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+    cb(null, 'assets/documentation/' + req.body.docname);
+    },
+    filename: (req, file, cb) => {
+    cb(null, req.body.pnom + '.pdf');
+    },
+}); 
+const upload = multer({ storage: storage });
+//#endregion ================== MULTER CONFIG ========================
+
 const connectionPool = mysql.connectionPool;
 
 /**
@@ -118,5 +133,62 @@ router.get("/requestFile/:docname/:pnom",async (req, res) => {
     const fileStream = fs.createReadStream(filePath, { root: __dirname });
     fileStream.pipe(res);
 });
+
+/**
+ * API Route to upload documents to our Directories as well as server.
+ * using multer's upload we defined above as our middleware.
+ */
+router.post("/addDocument", upload.single("myFile"), async (req, res) => {
+    
+    // retrieve the form data from the request body
+    const formData = req.body;
+
+    // do something with the form data and file
+    // console.log(formData.get('file'));
+    // console.log(formData.get('myFile'));
+    console.log(formData);
+
+    connectionPool.query(config.queries.addDocumentQuery, 
+        [
+            0, // Seq
+            formData.docname,
+            formData.pnom + '.pdf',
+            formData.title,
+            1, // active
+            formData.effective,
+            Date.now() // Updated, which is right now, in epoch.
+        ], (err, response) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            return res.status(500).send({ message: 'Internal Server Error' });
+        }
+        console.log("File added successfully");
+        res.json(response);
+    });  
+});
+
+
+/**
+ * Route to check if our database has an entry that matches the passed 
+ * parameter for docname and pnom (manual / filename)
+ * returns TRUE if the filename is taken, FALSE if it's available to be used.
+ */
+router.post("/isFilenameTaken", async (req, res) => {
+
+    // Putting the query here for now, we might move it to the config file later
+    let query = `SELECT EXISTS(SELECT 1 FROM documents WHERE docname = '${req.body.docname}' AND pnom = '${req.body.pnom}.pdf') AS entry_exists;`
+
+    console.log(query);
+
+    connectionPool.query(query, (err, [response, buffer]) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            return res.status(500).send({ message: 'Internal Server Error' });
+        }
+        console.log("response: " + response.entry_exists);
+        res.json(response);
+    });  
+});
+
 
 module.exports = router;

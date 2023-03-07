@@ -11,7 +11,7 @@ const mysql = require('mysql2');
 const app = express()
 
 var corsOptions = {
-    origin: "http://localhost:4200", // Origin is the IP of the Angular App making calls to this API
+    origin: "*", // Origin is the IP of the Angular App making calls to this API
     // credentials: true
 };
 
