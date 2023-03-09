@@ -10,17 +10,58 @@ const path = require('path');
 
 //#region ================== MULTER CONFIG ========================
 const multer  = require('multer')
+
+// Define storage for temporary file upload
+const tempStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, './temp/');
+    },
+    filename: function (req, file, cb) {
+      cb(null, file.originalname);
+    }
+});
+// Define multer middleware for temporary file upload
+const tempUpload = multer({ storage: tempStorage });
+  
 // configure multer middleware to store files in a directory called "uploads"
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-    cb(null, 'assets/documentation/' + req.body.docname);
+        console.log('MiddleWare Destination: ' + req.body.formDocname);
+        cb(null, 'assets/documentation/' + req.body.formDocname);
     },
     filename: (req, file, cb) => {
-    cb(null, req.body.pnom + '.pdf');
+        console.log('MiddleWare Filename: ' + req.body.formFilename);
+        cb(null, req.body.formFilename + '.pdf');
     },
 }); 
-const upload = multer({ storage: storage });
+// Define multer middleware for permanent file upload
+const  upload = multer({ storage: storage });
 //#endregion ================== MULTER CONFIG ========================
+
+//#region  ============================= Middlewares ==========================
+
+const requestTime = function (req, res, next) {
+    console.log('LMAO ERROR')
+    req.requestTime = Date.now()
+    // return res.status(500).send({ message: 'Internal Server Error' });
+    next();
+}
+
+// Middleware function to ensure filename does not contain spaces nor any '.pdf'
+const sanitizeData = function (req, res, next) {
+    // This code will be redone later down the line in case the user changes the input.
+    console.log('Inside sanitize', req.body);
+    req.body.formFilename = 'this is my filename spaces aaaaa .pdf'
+    let newFilename = req.body.formFilename;
+    newFilename = newFilename.replace(/\s+/g, '_'); // replace spaces with underscores
+    newFilename = newFilename.replace(/\.pdf/g, ''); // remove any instance of '.pdf' from the filename
+    req.body.formFilename = newFilename;
+
+    next();
+}
+
+//#endregion
+
 
 const connectionPool = mysql.connectionPool;
 
@@ -41,7 +82,7 @@ router.get("/getDocuments", async (req, res) => {
     let responseSent = false;
     let filteredDocManuals = [];
 
-    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access to
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         if (err || decoded == undefined) {
             responseSent = true;
@@ -138,16 +179,50 @@ router.get("/requestFile/:docname/:pnom",async (req, res) => {
  * API Route to upload documents to our Directories as well as server.
  * using multer's upload we defined above as our middleware.
  */
-router.post("/addDocument", upload.single("myFile"), async (req, res) => {
-    
+router.post("/addDocument", async (req, res) => {
+    // Use tmpUpload middleware to save file to temporary location
+    tempUpload.single("myFile")(req, res, function (err) {
+        console.log('tempUpload');
+        if (err) {
+        // Handle error
+        console.error(err);
+        return res.status(500).send('Error uploading file');
+        }
+
+        // Use editFormFilename middleware to edit req.body.formFilename
+        sanitizeData(req, res, function () {
+            console.log('sanitizeData');
+            console.log('Inside sanitize Data: reqbody', req.body);
+            console.log('./assets/documentation/' + req.body.formDocname + '/' + req.body.formFilename + '.pdf');
+            fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + req.body.formFilename + '.pdf', (err) => {
+                if (err) {
+                  console.log(err);
+                  return res.status(500).send('Error uploading file');
+                }
+                console.log('inside copyFile');
+                // Delete temporary file
+                fs.unlinkSync('./temp/' + req.file.filename);
+            
+                res.json({'a': 'b'})
+              });
+        });
+    });
+    /*
+    console.log(req.requestTime);
     // retrieve the form data from the request body
     const formData = req.body;
-
+    console.log('Main Call v')
+    console.log(req.body)
+    */
     // do something with the form data and file
     // console.log(formData.get('file'));
     // console.log(formData.get('myFile'));
-    console.log(formData);
+    // console.log(formData);
 
+
+    // console.log(JSON.stringify(formData.formEffective, null, 4));
+
+    /*
     connectionPool.query(config.queries.addDocumentQuery, 
         [
             0, // Seq
@@ -165,6 +240,8 @@ router.post("/addDocument", upload.single("myFile"), async (req, res) => {
         console.log("File added successfully");
         res.json(response);
     });  
+    */
+   // res.json({'a': 'b'})
 });
 
 
@@ -189,6 +266,5 @@ router.post("/isFilenameTaken", async (req, res) => {
         res.json(response);
     });  
 });
-
 
 module.exports = router;
