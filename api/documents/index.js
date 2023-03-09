@@ -58,20 +58,41 @@ const sanitizeData = function (req, res, next) {
 
 // Middleware function to save the actual entry on our document database
 const saveToDatabase = function(req, res, next) {
-    next();
+    // Quickly escape the following: ' and "
+    let escapedFormDocname = req.body.formDocname.replace(/'/g, "").replace(/"/g, '');
+    let escapedFormFilename = req.body.formFilename.replace(/'/g, "").replace(/"/g, '');
+    let escapedFormTitle = req.body.formTitle.replace(/'/g, "").replace(/"/g, '');
+
+    connectionPool.query(config.queries.addDocumentQuery,
+        [
+            0, // Seq
+            escapedFormDocname,
+            escapedFormFilename +  '.pdf',
+            escapedFormTitle,
+            1, // active
+            req.body.formEffective,
+            Date.now() // Updated, which is right now, in epoch.
+        ], (err, response) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            return res.status(500).send({ message: 'Internal Server Error' });
+        }
+        // console.log("File added successfully");
+        next();
+    });
 }
 
 // Middleware function to check our database for an entry that has docname + formFilename. 
 // If there's a match, reject the opretaion, delete tempFile, otherwise let the operation continue
 const checkForFilename = async function(req, res, next) {
     // Quickly escape the following: ' and "
-    let escapedFormDocname = req.body.formDocname.replace(/'/g, "\\'").replace(/"/g, '\\"');
-    let escapedFormFilename = req.body.formFilename.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    let escapedFormDocname = req.body.formDocname.replace(/'/g, "").replace(/"/g, '');
+    let escapedFormFilename = req.body.formFilename.replace(/'/g, "").replace(/"/g, '');
 
     // Putting the query here for now, we might move it to the config file later
     let query = `SELECT EXISTS(SELECT 1 FROM documents WHERE docname = '${escapedFormDocname}' AND pnom = '${escapedFormFilename}.pdf') AS filename_exists;`
 
-    console.log(query);
+    // console.log(query);
 
     connectionPool.query(query, (err, [response, buffer]) => {
         if (err) {
@@ -210,9 +231,10 @@ router.get("/requestFile/:docname/:pnom",async (req, res) => {
  * using multer's upload we defined above as our middleware.
  */
 router.post("/addDocument", tempUpload.single("myFile"), checkForFilename, sanitizeData, saveToDatabase,async (req, res) => {
+    let escapedFormFilename = req.body.formFilename.replace(/'/g, "").replace(/"/g, '');
 
     // Now that all the other operations have happened in the middlewares, we move the file to it's final location and delte the temporary file.
-    fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + req.body.formFilename + '.pdf', (err) => {
+    fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + escapedFormFilename + '.pdf', (err) => {
         if (err) {
             console.log(err);
             return res.status(500).send('Error uploading file');
