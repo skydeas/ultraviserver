@@ -23,6 +23,7 @@ const tempStorage = multer.diskStorage({
 // Define multer middleware for temporary file upload
 const tempUpload = multer({ storage: tempStorage });
   
+// These are NOT being used in the current logic, we are saving to the actual folder through fs copying.
 // configure multer middleware to store files in a directory called "uploads"
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -40,24 +41,53 @@ const  upload = multer({ storage: storage });
 
 //#region  ============================= Middlewares ==========================
 
-const requestTime = function (req, res, next) {
-    console.log('LMAO ERROR')
-    req.requestTime = Date.now()
-    // return res.status(500).send({ message: 'Internal Server Error' });
-    next();
+const deleteTemporaryFile = function(req, res, next){
+    // Delete temporary file
+    fs.unlinkSync('./temp/' + req.file.filename);
 }
 
 // Middleware function to ensure filename does not contain spaces nor any '.pdf'
 const sanitizeData = function (req, res, next) {
-    // This code will be redone later down the line in case the user changes the input.
-    console.log('Inside sanitize', req.body);
-    req.body.formFilename = 'this is my filename spaces aaaaa .pdf'
+    // req.body.formFilename = 'this is my filename spaces aaaaa .pdf' // ============== REMOVE ME WHEN DONE TESTING =======================
     let newFilename = req.body.formFilename;
     newFilename = newFilename.replace(/\s+/g, '_'); // replace spaces with underscores
     newFilename = newFilename.replace(/\.pdf/g, ''); // remove any instance of '.pdf' from the filename
     req.body.formFilename = newFilename;
-
     next();
+}
+
+// Middleware function to save the actual entry on our document database
+const saveToDatabase = function(req, res, next) {
+    next();
+}
+
+// Middleware function to check our database for an entry that has docname + formFilename. 
+// If there's a match, reject the opretaion, delete tempFile, otherwise let the operation continue
+const checkForFilename = async function(req, res, next) {
+    // Quickly escape the following: ' and "
+    let escapedFormDocname = req.body.formDocname.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    let escapedFormFilename = req.body.formFilename.replace(/'/g, "\\'").replace(/"/g, '\\"');
+
+    // Putting the query here for now, we might move it to the config file later
+    let query = `SELECT EXISTS(SELECT 1 FROM documents WHERE docname = '${escapedFormDocname}' AND pnom = '${escapedFormFilename}.pdf') AS filename_exists;`
+
+    console.log(query);
+
+    connectionPool.query(query, (err, [response, buffer]) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            deleteTemporaryFile(req, res);
+            return res.status(500).send({ message: 'Internal Server Error' });
+        }
+        
+        if(response.filename_exists){
+            deleteTemporaryFile(req, res);
+            return res.status(403).send('Error uploading file! Username is already Taken!');
+        }
+
+        // No conflict, continue
+        next();
+    });  
 }
 
 //#endregion
@@ -179,92 +209,21 @@ router.get("/requestFile/:docname/:pnom",async (req, res) => {
  * API Route to upload documents to our Directories as well as server.
  * using multer's upload we defined above as our middleware.
  */
-router.post("/addDocument", async (req, res) => {
-    // Use tmpUpload middleware to save file to temporary location
-    tempUpload.single("myFile")(req, res, function (err) {
-        console.log('tempUpload');
-        if (err) {
-        // Handle error
-        console.error(err);
-        return res.status(500).send('Error uploading file');
-        }
+router.post("/addDocument", tempUpload.single("myFile"), checkForFilename, sanitizeData, saveToDatabase,async (req, res) => {
 
-        // Use editFormFilename middleware to edit req.body.formFilename
-        sanitizeData(req, res, function () {
-            console.log('sanitizeData');
-            console.log('Inside sanitize Data: reqbody', req.body);
-            console.log('./assets/documentation/' + req.body.formDocname + '/' + req.body.formFilename + '.pdf');
-            fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + req.body.formFilename + '.pdf', (err) => {
-                if (err) {
-                  console.log(err);
-                  return res.status(500).send('Error uploading file');
-                }
-                console.log('inside copyFile');
-                // Delete temporary file
-                fs.unlinkSync('./temp/' + req.file.filename);
-            
-                res.json({'a': 'b'})
-              });
-        });
+    // Now that all the other operations have happened in the middlewares, we move the file to it's final location and delte the temporary file.
+    fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + req.body.formFilename + '.pdf', (err) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).send('Error uploading file');
+        }
+        // Delete temporary file
+        deleteTemporaryFile(req, res);
+    
+        // Doing it like this will trip the catch err: any, I am going to send a res.json,
+        // return res.status(200).send('File Uploaded.');
+        res.json({status: 200})
     });
-    /*
-    console.log(req.requestTime);
-    // retrieve the form data from the request body
-    const formData = req.body;
-    console.log('Main Call v')
-    console.log(req.body)
-    */
-    // do something with the form data and file
-    // console.log(formData.get('file'));
-    // console.log(formData.get('myFile'));
-    // console.log(formData);
-
-
-    // console.log(JSON.stringify(formData.formEffective, null, 4));
-
-    /*
-    connectionPool.query(config.queries.addDocumentQuery, 
-        [
-            0, // Seq
-            formData.docname,
-            formData.pnom + '.pdf',
-            formData.title,
-            1, // active
-            formData.effective,
-            Date.now() // Updated, which is right now, in epoch.
-        ], (err, response) => {
-        if (err) {
-            console.log("Query Error: ", err);
-            return res.status(500).send({ message: 'Internal Server Error' });
-        }
-        console.log("File added successfully");
-        res.json(response);
-    });  
-    */
-   // res.json({'a': 'b'})
-});
-
-
-/**
- * Route to check if our database has an entry that matches the passed 
- * parameter for docname and pnom (manual / filename)
- * returns TRUE if the filename is taken, FALSE if it's available to be used.
- */
-router.post("/isFilenameTaken", async (req, res) => {
-
-    // Putting the query here for now, we might move it to the config file later
-    let query = `SELECT EXISTS(SELECT 1 FROM documents WHERE docname = '${req.body.docname}' AND pnom = '${req.body.pnom}.pdf') AS entry_exists;`
-
-    console.log(query);
-
-    connectionPool.query(query, (err, [response, buffer]) => {
-        if (err) {
-            console.log("Query Error: ", err);
-            return res.status(500).send({ message: 'Internal Server Error' });
-        }
-        console.log("response: " + response.entry_exists);
-        res.json(response);
-    });  
 });
 
 module.exports = router;
