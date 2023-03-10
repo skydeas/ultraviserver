@@ -62,6 +62,10 @@ const saveToDatabase = function(req, res, next) {
     let escapedFormDocname = req.body.formDocname.replace(/'/g, "").replace(/"/g, '');
     let escapedFormFilename = req.body.formFilename.replace(/'/g, "").replace(/"/g, '');
     let escapedFormTitle = req.body.formTitle.replace(/'/g, "").replace(/"/g, '');
+    let escapedFormVersion = req.body.formVersion.replace(/'/g, "").replace(/"/g, '');
+
+    // Set our default value for ver field
+    if(escapedFormVersion == '') escapedFormVersion = 'None';
 
     connectionPool.query(config.queries.addDocumentQuery,
         [
@@ -69,9 +73,10 @@ const saveToDatabase = function(req, res, next) {
             escapedFormDocname,
             escapedFormFilename +  '.pdf',
             escapedFormTitle,
+            escapedFormVersion,
             1, // active
             req.body.formEffective,
-            Date.now() // Updated, which is right now, in epoch.
+            req.body.formUpdated
         ], (err, response) => {
         if (err) {
             console.log("Query Error: ", err);
