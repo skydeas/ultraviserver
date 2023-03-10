@@ -46,34 +46,39 @@ const deleteTemporaryFile = function(req, res, next){
     fs.unlinkSync('./temp/' + req.file.filename);
 }
 
+function replaceSpecialCharacters(str) {
+    const regex = /['"\\\0\\\r\\\n\\\t\\\v\\\b\\\f&<>%*;[\]{}!:#^$~|\/]/g;
+    return str.replace(regex, "");
+}
+
 // Middleware function to ensure filename does not contain spaces nor any '.pdf'
 const sanitizeData = function (req, res, next) {
-    // req.body.formFilename = 'this is my filename spaces aaaaa .pdf' // ============== REMOVE ME WHEN DONE TESTING =======================
+    // Remove any instance of .pdf from filename
     let newFilename = req.body.formFilename;
-    newFilename = newFilename.replace(/\s+/g, '_'); // replace spaces with underscores
     newFilename = newFilename.replace(/\.pdf/g, ''); // remove any instance of '.pdf' from the filename
     req.body.formFilename = newFilename;
+
+    req.body.formDocname = replaceSpecialCharacters(req.body.formDocname);
+    req.body.formFilenameSanitized = replaceSpecialCharacters(req.body.formFilename);
+    req.body.formTitle = replaceSpecialCharacters(req.body.formTitle);
+    req.body.formVersion = replaceSpecialCharacters(req.body.formVersion);
+
     next();
 }
 
 // Middleware function to save the actual entry on our document database
 const saveToDatabase = function(req, res, next) {
-    // Quickly escape the following: ' and "
-    let escapedFormDocname = req.body.formDocname.replace(/'/g, "").replace(/"/g, '');
-    let escapedFormFilename = req.body.formFilename.replace(/'/g, "").replace(/"/g, '');
-    let escapedFormTitle = req.body.formTitle.replace(/'/g, "").replace(/"/g, '');
-    let escapedFormVersion = req.body.formVersion.replace(/'/g, "").replace(/"/g, '');
-
+    console.log('saveToDatabase: ', req.body);
     // Set our default value for ver field
-    if(escapedFormVersion == '') escapedFormVersion = 'None';
+    if(req.body.formVersion == '') req.body.formVersion = 'None';
 
     connectionPool.query(config.queries.addDocumentQuery,
         [
             0, // Seq
-            escapedFormDocname,
-            escapedFormFilename +  '.pdf',
-            escapedFormTitle,
-            escapedFormVersion,
+            req.body.formDocname,
+            req.body.formFilenameSanitized +  '.pdf',
+            req.body.formTitle,
+            req.body.formVersion,
             1, // active
             req.body.formEffective,
             req.body.formUpdated
@@ -91,8 +96,8 @@ const saveToDatabase = function(req, res, next) {
 // If there's a match, reject the opretaion, delete tempFile, otherwise let the operation continue
 const checkForFilename = async function(req, res, next) {
     // Quickly escape the following: ' and "
-    let escapedFormDocname = req.body.formDocname.replace(/'/g, "").replace(/"/g, '');
-    let escapedFormFilename = req.body.formFilename.replace(/'/g, "").replace(/"/g, '');
+    let escapedFormDocname = replaceSpecialCharacters(req.body.formDocname);
+    let escapedFormFilename = replaceSpecialCharacters(req.body.formFilename);
 
     // Putting the query here for now, we might move it to the config file later
     let query = `SELECT EXISTS(SELECT 1 FROM documents WHERE docname = '${escapedFormDocname}' AND pnom = '${escapedFormFilename}.pdf') AS filename_exists;`
@@ -236,10 +241,9 @@ router.get("/requestFile/:docname/:pnom",async (req, res) => {
  * using multer's upload we defined above as our middleware.
  */
 router.post("/addDocument", tempUpload.single("myFile"), checkForFilename, sanitizeData, saveToDatabase,async (req, res) => {
-    let escapedFormFilename = req.body.formFilename.replace(/'/g, "").replace(/"/g, '');
 
     // Now that all the other operations have happened in the middlewares, we move the file to it's final location and delte the temporary file.
-    fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + escapedFormFilename + '.pdf', (err) => {
+    fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + replaceSpecialCharacters(req.body.formFilename) + '.pdf', (err) => {
         if (err) {
             console.log(err);
             return res.status(500).send('Error uploading file');
