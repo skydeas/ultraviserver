@@ -11,7 +11,7 @@ const mysql = require('mysql2');
 const app = express()
 
 var corsOptions = {
-    origin: "http://localhost:4200", // Origin is the IP of the Angular App making calls to this API
+    origin: "*", // Origin is the IP of the Angular App making calls to this API
     // credentials: true
 };
 
@@ -63,6 +63,8 @@ app.use('/api/task', require('./api/task'));
 app.use('/api/rolestasks', require('./api/rolestasks'));
 
 app.use('/api/userroles', require('./api/userroles'));
+
+app.use('/api/documents', require('./api/documents'));
 
 //#region ============================ Authentication Region ===============================
 
@@ -192,25 +194,11 @@ app.post('/auth/getTasksById', async function (req, res) {
 })
 //#endregion
 
-//#region ============================ Test Region ===============================
-
-// POST /login gets urlencoded bodies
-app.get('/getDataFromServer', async function (req, res) {
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    res.json({
-        'Super Secret Data': 'Payload'
-    });
-})
-//#endregion
-
 // set port, listen for requests
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
 });
-
-// ============================ Middleware Region ===============================
-
 
 // Remove me one development starts, this is for testing request parameters in the API
 // console.log("Request: \n" + util.inspect(req.params, {showHidden: false, depth: null, colors: true}))
