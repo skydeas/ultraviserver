@@ -38,6 +38,8 @@ module.exports = {
         // ====== Documents Table ======
         selectAllDocumentsQuery : 'SELECT * FROM ' + databaseName + '.documents',
         addDocumentQuery : 'INSERT INTO ' + databaseName + '.documents (seq, docname, pnom, title, ver, active, effective, updated) VALUES (?,?,?,?,?,?,?,?);',
+        updateSequenceQuery : 'UPDATE ' + databaseName + '.documents SET seq=? WHERE id=?',
+
 
     },
     tokenMaxAge: ('2h'), // 2 hours

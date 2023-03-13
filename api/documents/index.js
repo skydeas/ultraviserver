@@ -47,7 +47,7 @@ const deleteTemporaryFile = function(req, res, next){
 }
 
 function replaceSpecialCharacters(str) {
-    const regex = /['"\\\0\\\r\\\n\\\t\\\v\\\b\\\f&<>%*;[\]{}!:#^$~|\/]/g;
+    const regex = /['"\\\0\\\r\\\n\\\t\\\v\\\b\\\f&<>%*;[\]{}!:#^$~|\/?]/g;
     return str.replace(regex, "");
 }
 
@@ -256,5 +256,29 @@ router.post("/addDocument", tempUpload.single("myFile"), checkForFilename, sanit
         res.json({status: 200})
     });
 });
+
+/**
+ * Route to update the sequence of a specific section of documents.
+ * The front-end is going to send an array of document data with the type
+ * [id, id, id, ....]. We will use a for loop to iterate through this array, and then
+ * set each id to their respective sequence. once finished, we return a success message.
+ * We use the index of the local for loop to set the seq order.
+ *
+ * 
+ * on Error we return that error to let the user know there was an issue with the update.
+ */
+router.post("/updateSequence", async (req, res) => {
+    for(let index = 0; index < req.body.length; index ++){
+        connectionPool.query(config.queries.updateSequenceQuery, [index,req.body[index]], (err, results) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+        });
+    }
+    res.json({status: 200})
+});
+
 
 module.exports = router;
