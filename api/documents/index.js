@@ -207,6 +207,55 @@ router.get("/getDocuments", async (req, res) => {
 });
 
 /**
+ * Route to get ALL documents from database, for the purposes of editing.
+ */
+router.get("/getAllDocuments", async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllDocumentsQuery + " ORDER BY seq", (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+});
+
+router.get("/getDocument/:id", async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllDocumentsQuery + " WHERE id=?", [req.params.id], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+            
+});
+
+
+/**
  * API Route to send the config.docmanuals to the clientside
  * so we can create a drop-down based on that array.
  */

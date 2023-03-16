@@ -37,6 +37,7 @@ yarn-error.log
 testem.log
 /typings
 /src/app/mock-data.ts
+/assets
 
 # System files
 .DS_Store
