@@ -39,6 +39,7 @@ module.exports = {
         selectAllDocumentsQuery : 'SELECT * FROM ' + databaseName + '.documents',
         addDocumentQuery : 'INSERT INTO ' + databaseName + '.documents (seq, docname, pnom, title, ver, active, effective, updated) VALUES (?,?,?,?,?,?,?,?);',
         updateSequenceQuery : 'UPDATE ' + databaseName + '.documents SET seq=? WHERE id=?',
+        updateDocumentActiveStatusQuery : 'UPDATE ' + databaseName + '.documents SET active=? WHERE id=?',
 
 
     },
