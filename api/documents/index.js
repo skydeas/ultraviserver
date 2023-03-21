@@ -138,6 +138,109 @@ const checkForFilename = async function(req, res, next) {
     });  
 }
 
+// Middleware function to check our database for an entry that has docname + formFilename WHERE id does NOT match req.params.id
+// If there's a match, reject the opretaion, delete tempFile, otherwise let the operation continue
+const checkForFilenameSpecial = async function(req, res, next) {
+    // Quickly escape the following: ' and "
+    let escapedFormDocname = replaceSpecialCharacters(req.body.formDocname);
+    let escapedFormFilename = replaceSpecialCharacters(req.body.formFilename);
+
+    // Putting the query here for now, we might move it to the config file later
+    let query = `SELECT EXISTS(SELECT 1 FROM documents WHERE docname = '${escapedFormDocname}' AND pnom = '${escapedFormFilename}.pdf' AND NOT id = '${req.params.id}') AS filename_exists;`
+
+    // console.log(query);
+
+    connectionPool.query(query, (err, [response, buffer]) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            deleteTemporaryFile(req, res);
+            return res.status(500).send({ message: 'Internal Server Error' });
+        }
+        
+        if(response.filename_exists){
+            deleteTemporaryFile(req, res);
+            return res.status(403).send('Error uploading file! Username is already Taken!');
+        }
+
+        // No conflict, continue
+        next();
+    });  
+}
+
+// Middleware function to get the filename of a entry and save it to our formFilename.
+const getFilenameById = async function(req, res, next) {
+     connectionPool.query(config.queries.selectAllDocumentsQuery + ' WHERE id=?', [req.params.id], (err, [response, buffer]) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            deleteTemporaryFile(req, res);
+            return res.status(500).send({ message: 'Internal Server Error' });
+        }
+
+        // Set filename to that of the one already in the system.
+        newFilename = response.pnom
+        req.body.formFilename = newFilename;
+
+        // No conflict, continue
+        next();
+    });  
+}
+
+// Middleware function to move the file from its original position to the new one
+const moveFile = async function(req, res, next) {
+    connectionPool.query(config.queries.selectAllDocumentsQuery + ' WHERE id=?', [req.params.id], (err, [response, buffer]) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            deleteTemporaryFile(req, res);
+            return res.status(500).send({ message: 'Internal Server Error' });
+        }
+
+        let oldPath =  './assets/documentation/' + response.docname + '/' + response.pnom;
+        let newPath =  './assets/documentation/' + req.body.formDocname + '/' + replaceSpecialCharacters(req.body.formFilename) + '.pdf';
+
+        fs.rename(oldPath, newPath, function (err) {
+            if (err) throw err
+            // console.log('File Successfully renamed -> AKA moved!')
+        })
+        
+        next();
+    }); 
+}
+
+// Middleware function to delete the old file before we move the new file into place.
+const deleteOldFile = async function(req, res, next) {
+    // Delete Old file
+    let oldPath =  './assets/documentation/' + req.body.formOriginalDocname + '/' + req.body.formOriginalFilename;
+    fs.unlinkSync(oldPath);
+    next();
+}
+
+// Middleware function to update the database entry based on req.params.id.
+const updateDatabaseEntry = async function(req, res, next) {
+    // updateDocumentQuery : 'UPDATE ' + databaseName + '.documents SET (docname=?,pnom=?,title=?,ver=?,active=?,effective=?,updated=?) WHERE id=?',
+    // console.log('saveToDatabase: ', req.body);
+    // Set our default value for ver field
+    if(req.body.formVersion == '') req.body.formVersion = 'None';
+
+    connectionPool.query(config.queries.updateDocumentQuery,
+        [
+            req.body.formDocname,
+            req.body.formFilenameSanitized +  '.pdf',
+            req.body.formTitle,
+            req.body.formVersion,
+            req.body.formActive,
+            req.body.formEffective,
+            req.body.formUpdated,
+            req.params.id
+        ], (err, response) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            return res.status(500).send({ message: 'Internal Server Error' });
+        }
+        // console.log("File added successfully");
+        next();
+    });
+}
+
 //#endregion
 
 
@@ -284,11 +387,6 @@ router.get("/getDocumentationManuals",async (req, res) => {
  * API Route to send the document back to the user.
  */
 router.get("/requestFile/:docname/:pnom",async (req, res) => {
-    /*
-    let filePath = '/assets/documentation/';
-    filePath = filePath + req.params.docname + '/' + req.params.pnom;
-    */
-
     let filePath = path.join(__dirname, '../../assets/documentation/' + req.params.docname + '/' + req.params.pnom);
     // console.log(req.params.docname + '/' + req.params.pnom);
     // res.sendFile(filePath, { root: '.' });
@@ -299,6 +397,13 @@ router.get("/requestFile/:docname/:pnom",async (req, res) => {
 
     // Read the PDF file from disk and stream it to the response
     const fileStream = fs.createReadStream(filePath, { root: __dirname });
+
+    fileStream.on('error', function(err) {
+        // Handle the error here, for example by sending an error response to the client
+        console.error('Error reading file:', err);
+        return res.status(404).send('File not found');
+    });
+
     fileStream.pipe(res);
 });
 
@@ -306,7 +411,7 @@ router.get("/requestFile/:docname/:pnom",async (req, res) => {
  * API Route to upload documents to our Directories as well as server.
  * using multer's upload we defined above as our middleware.
  */
-router.post("/addDocument", tempUpload.single("myFile"), checkForFilename, sanitizeData, saveToDatabase,async (req, res) => {
+router.post("/addDocument", tempUpload.single("myFile"), checkForFilename, sanitizeData, saveToDatabase, async (req, res) => {
 
     // Now that all the other operations have happened in the middlewares, we move the file to it's final location and delte the temporary file.
     fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + replaceSpecialCharacters(req.body.formFilename) + '.pdf', (err) => {
@@ -324,10 +429,60 @@ router.post("/addDocument", tempUpload.single("myFile"), checkForFilename, sanit
 });
 
 /**
- * API Route to upload documents to our Directories as well as server.
- * using multer's upload we defined above as our middleware.
+ * API Route to revise documents in our directory / database.
+ * Essentially uploads a newer version of a file, while deactivating the old file
  */
 router.post("/reviseDocument/:id", tempUpload.single("myFile"), checkForFilename, sanitizeData, saveToDatabase, deactivateByParamsId, async (req, res) => {
+
+    // Now that all the other operations have happened in the middlewares, we move the file to it's final location and delte the temporary file.
+    fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + replaceSpecialCharacters(req.body.formFilename) + '.pdf', (err) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).send('Error uploading file');
+        }
+        // Delete temporary file
+        deleteTemporaryFile(req, res);
+    
+        // Doing it like this will trip the catch err: any, I am going to send a res.json,
+        // return res.status(200).send('File Uploaded.');
+        res.json({status: 200})
+    });
+});
+
+/**
+ * API Route to edit our documents.
+ * This is for the case of editing the pdf file, but not the database entry.
+ */
+router.post("/editDocumentFile/:id", tempUpload.single("myFile"), getFilenameById, sanitizeData, async (req, res) => {
+
+    // Now that all the other operations have happened in the middlewares, we move the file to it's final location and delte the temporary file.
+    fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + replaceSpecialCharacters(req.body.formFilename) + '.pdf', (err) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).send('Error uploading file');
+        }
+        // Delete temporary file
+        deleteTemporaryFile(req, res);
+    
+        // Doing it like this will trip the catch err: any, I am going to send a res.json,
+        // return res.status(200).send('File Uploaded.');
+        res.json({status: 200})
+    });
+});
+
+/**
+ * API Route to edit our documents.
+ * This is for the case of editing the database entry but not the File (we will just move the file if necessary.)
+ */
+router.post("/editDocumentDatabaseEntry/:id", multer().none(), checkForFilenameSpecial, sanitizeData, moveFile, updateDatabaseEntry, async (req, res) => {
+    res.json({status: 200})
+});
+
+/**
+ * API Route to edit documents in our Directories as well as update the database object.
+ * using multer's upload we defined above as our middleware.
+ */
+router.post("/editDocumentBoth/:id", tempUpload.single("myFile"), checkForFilenameSpecial, sanitizeData, updateDatabaseEntry, deleteOldFile, async (req, res) => {
 
     // Now that all the other operations have happened in the middlewares, we move the file to it's final location and delte the temporary file.
     fs.copyFile('./temp/' + req.file.filename, './assets/documentation/' + req.body.formDocname + '/' + replaceSpecialCharacters(req.body.formFilename) + '.pdf', (err) => {
