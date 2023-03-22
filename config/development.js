@@ -41,6 +41,9 @@ module.exports = {
         updateSequenceQuery : 'UPDATE ' + databaseName + '.documents SET seq=? WHERE id=?',
         updateDocumentQuery : 'UPDATE ' + databaseName + '.documents SET docname=?,pnom=?,title=?,ver=?,active=?,effective=?,updated=? WHERE id=?',
         updateDocumentActiveStatusQuery : 'UPDATE ' + databaseName + '.documents SET active=? WHERE id=?',
+        // ====== Airports Table ======
+        selectAllAirportsQuery : 'SELECT * FROM ' + databaseName + '.airports',
+        
 
 
     },
