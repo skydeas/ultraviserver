@@ -3,6 +3,7 @@ const router = express.Router();
 const config = require('../../config/development');
 const mysql = require('mysql2');
 const auth = require('../../auth/');
+const jwt = require('jsonwebtoken');
 
 const connectionPool = mysql.connectionPool;
 
