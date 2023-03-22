@@ -43,6 +43,8 @@ module.exports = {
         updateDocumentActiveStatusQuery : 'UPDATE ' + databaseName + '.documents SET active=? WHERE id=?',
         // ====== Airports Table ======
         selectAllAirportsQuery : 'SELECT * FROM ' + databaseName + '.airports',
+        addAirportQuery : 'INSERT INTO ' + databaseName + '.airports (IATA, ICAO, AirportName, City, Country, Latitude, Longitude, Altitude, TZ) VALUES (?,?,?,?,?,?,?,?,?);',
+
         
 
 
