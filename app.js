@@ -66,6 +66,8 @@ app.use('/api/userroles', require('./api/userroles'));
 
 app.use('/api/documents', require('./api/documents'));
 
+app.use('/api/airport', require('./api/airports'));
+
 //#region ============================ Authentication Region ===============================
 
 // Extracted the functionality of the route '/auth/isTokenValid' as a function so I can use it in other places.

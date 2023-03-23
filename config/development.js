@@ -41,8 +41,11 @@ module.exports = {
         updateSequenceQuery : 'UPDATE ' + databaseName + '.documents SET seq=? WHERE id=?',
         updateDocumentQuery : 'UPDATE ' + databaseName + '.documents SET docname=?,pnom=?,title=?,ver=?,active=?,effective=?,updated=? WHERE id=?',
         updateDocumentActiveStatusQuery : 'UPDATE ' + databaseName + '.documents SET active=? WHERE id=?',
-
-
+        // ====== Airports Table ======
+        selectAllAirportsQuery : 'SELECT * FROM ' + databaseName + '.airports',
+        addAirportQuery : 'INSERT INTO ' + databaseName + '.airports (IATA, ICAO, AirportName, City, Country, Latitude, Longitude, Altitude, TZ) VALUES (?,?,?,?,?,?,?,?,?);',
+        updateAirportQuery : 'UPDATE ' + databaseName + '.airports SET IATA=?,ICAO=?,AirportName=?,City=?,Country=?,Latitude=?,Longitude=?,Altitude=?,TZ=? WHERE id=?',
+        deleteAirportQuery : 'DELETE FROM ' + databaseName + '.airports WHERE id=?',
     },
     tokenMaxAge: ('2h'), // 2 hours
     // Array of objects for the manuals (different sections) in our database. If needed we can make this a database object.
