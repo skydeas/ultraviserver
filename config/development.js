@@ -1,6 +1,7 @@
 'use strict';
 /*eslint no-process-env:0*/
 const fs = require("fs");
+const nodemailer = require('nodemailer');
 
 // Defined the database name here so we can use it in this file as well, If we need to change database Name.
 const databaseName = 'ultravi_ulav';
@@ -57,6 +58,18 @@ module.exports = {
         {categoryName: "Airport Manuals & Guides", docname: "KMANUALS", task_id: 15},
         {categoryName: "Safety Bulletins", docname: "SFTB", task_id: 16},
     ],
+    mail_transporter : nodemailer.createTransport({
+        host: 'mail.ultravi.com',
+        port: 465,
+        secure: true,
+        auth: {
+            user: 'mdambrosio@ultravi.com',
+            pass: 'tmw5*lvcd.vi'
+        },
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 20000
+    })
 };
 
 
