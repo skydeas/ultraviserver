@@ -176,6 +176,8 @@ router.post("/submitRequestPasswordReset", async (req, res) => {
                 // Emails do NOT mismatch, meaning we can set our new password!
                 // If we wanted to validate we would do it here, but let's just update the password and then DELETE the token.
                 connectionPool.query(config.queries.updateUserPasswordByEmailQuery, [req.body.password, req.body.email], (err, results) => {
+                    // DELETE the token
+                    deleteTokenFromDatabase(decoded.id);
                     return res.status(200).send({'message':'success'});
                 });
             }
