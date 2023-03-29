@@ -70,6 +70,8 @@ app.use('/api/airport', require('./api/airports'));
 
 app.use('/api/mailer', require('./api/mailer'));
 
+app.use('/api/token', require('./api/token'));
+
 //#region ============================ Authentication Region ===============================
 
 // Extracted the functionality of the route '/auth/isTokenValid' as a function so I can use it in other places.

@@ -47,6 +47,12 @@ module.exports = {
         addAirportQuery : 'INSERT INTO ' + databaseName + '.airports (IATA, ICAO, AirportName, City, Country, Latitude, Longitude, Altitude, TZ) VALUES (?,?,?,?,?,?,?,?,?);',
         updateAirportQuery : 'UPDATE ' + databaseName + '.airports SET IATA=?,ICAO=?,AirportName=?,City=?,Country=?,Latitude=?,Longitude=?,Altitude=?,TZ=? WHERE id=?',
         deleteAirportQuery : 'DELETE FROM ' + databaseName + '.airports WHERE id=?',
+        // ====== Password Resert Tokens Table ======
+        selectAllPasswordResetTokensQuery : 'SELECT * FROM ' + databaseName + '.account_recovery_tokens',
+        addPasswordResetTokenQuery : 'INSERT INTO ' + databaseName + '.account_recovery_tokens (expiration, user_email) VALUES (?,?);',
+        deletePasswordResetTokenQuery : 'DELETE FROM ' + databaseName + '.account_recovery_tokens WHERE id=?',
+
+
     },
     tokenMaxAge: ('2h'), // 2 hours
     // Array of objects for the manuals (different sections) in our database. If needed we can make this a database object.
