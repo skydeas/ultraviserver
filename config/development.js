@@ -16,11 +16,13 @@ module.exports = {
     // Name of the database we are using
     databaseName : databaseName,
     queries:  {
+        // ====== User Table ======
         selectAllUsersQuery : 'SELECT * FROM ' + databaseName + '.users',
         countUsersQuery : 'SELECT COUNT(id) as user_count FROM ' + databaseName + '.users',
         deleteUserQuery : 'DELETE FROM ' + databaseName + '.users WHERE id=?',
         addUserQuery : 'INSERT INTO ' + databaseName + '.users (username, password, salt, hint, location, airline, active, hr_employee, role, created, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
         updateUserQuery : 'UPDATE  ' + databaseName + '.users SET username = ?, password = ?, salt = ?, hint = ?, location = ?, airline = ?, active = ?, hr_employee = ?, role = ?, created = ?, created_by = ? WHERE id = ?',
+        updateUserPasswordByEmailQuery : 'UPDATE  ' + databaseName + '.users SET password = ? WHERE email = ?',
         // ====== Roles Table ======
         selectAllRolesQuery : 'SELECT * FROM ' + databaseName + '.roles',
         updateRoleQuery : 'UPDATE  ' + databaseName + '.roles SET name = ?, description = ?, created = ?, created_by = ? WHERE id = ?',
@@ -51,6 +53,7 @@ module.exports = {
         selectAllPasswordResetTokensQuery : 'SELECT * FROM ' + databaseName + '.account_recovery_tokens',
         addPasswordResetTokenQuery : 'INSERT INTO ' + databaseName + '.account_recovery_tokens (expiration, user_email) VALUES (?,?);',
         deletePasswordResetTokenQuery : 'DELETE FROM ' + databaseName + '.account_recovery_tokens WHERE id=?',
+        deletePasswordResetTokenByEmailQuery : 'DELETE FROM ' + databaseName + '.account_recovery_tokens WHERE email=?',
 
 
     },

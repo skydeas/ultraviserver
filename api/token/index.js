@@ -136,7 +136,10 @@ router.post("/requestPasswordReset", isUserValid, checkForActiveToken, async (re
             console.log("Query Error: ", err);
             return res.status(500).send({ message: 'Internal Server Error' });
         }
+        // console.log('tokens: ', tokens);
+
         const jwtBearerToken = jwt.sign({
+            id: tokens.insertId,
             expiration: timestamp,
             email: user_email,
         }, config.privateKey, {
@@ -149,6 +152,49 @@ router.post("/requestPasswordReset", isUserValid, checkForActiveToken, async (re
 
         return res.status(200).send({'message':'success'});
     });
+});
+
+router.post("/submitRequestPasswordReset", async (req, res) => {
+    jwt.verify(req.body.token, config.privateKey, (err, decoded) => {
+        if(err){
+            if(err.name === 'TokenExpiredError'){
+                connectionPool.query(config.queries.deletePasswordResetTokenByEmailQuery, [req.body.email], (err, results) => {
+                    return res.status(500).send({ message: 'Token has expired' });
+                });
+            }
+            if(err.name === 'JsonWebTokenError'){
+                return res.status(500).send({ message: 'Invalid token' });
+            }
+        }
+        if (decoded !== undefined) {
+            // There are no errors, Now we are going to check to see if the email on the token matches the email submitted,
+            // If error, return error and log it, 
+            // If success, change the password.
+            if(decoded.email !== req.body.email){
+                return res.status(500).send({ message: 'Email mismatch' });
+            } else {
+                // Emails do NOT mismatch, meaning we can set our new password!
+                // If we wanted to validate we would do it here, but let's just update the password and then DELETE the token.
+                connectionPool.query(config.queries.updateUserPasswordByEmailQuery, [req.body.password, req.body.email], (err, results) => {
+                    return res.status(200).send({'message':'success'});
+                });
+            }
+        }
+    })
+});
+
+router.post("/verifyToken", async (req, res) => {
+    jwt.verify(req.body.token, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+        }
+        if (decoded !== undefined) {
+            // API Route to get all tasks available to the ID passed in the parameter.
+            connectionPool.query(config.queries.allTasksAvailableToUserById, [decoded._id], (err, results) => {
+                return res.status(200).send({'message':'success'});
+            });
+        }
+    })
 });
 
 // Function to delete a token by the token id. (In case a token is expired, or already used.);
@@ -208,12 +254,13 @@ let sendPasswordResetEmail = function(_token, user_email){
                 <p class="message">
                 If you've lost your password, or wish to reset it, use the link below to get started.
                 </p>
-                <a class="button" href="http://http://192.168.1.132:4200/reset-password-request?token=${_token}">Reset Password</a>
+                <a class="button" href="192.168.1.132:4200/reset-password-request?token=${_token}">Reset Password</a>
             </div>
             </body>
         </html>
         `,
     };
+    // REMOVING HTTPS FROM THE LINK, WE NEED TO ADD IT BACK WHEN WE HAVE THE APP HOSTED.
 
     config.mail_transporter.sendMail(message, (error, info) => {
         if (error) {
