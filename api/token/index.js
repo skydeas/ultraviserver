@@ -154,6 +154,7 @@ router.post("/requestPasswordReset", isUserValid, checkForActiveToken, async (re
     });
 });
 
+// Route that gets called once the request is submitted.
 router.post("/submitRequestPasswordReset", async (req, res) => {
     jwt.verify(req.body.token, config.privateKey, (err, decoded) => {
         if(err){
@@ -185,6 +186,8 @@ router.post("/submitRequestPasswordReset", async (req, res) => {
     })
 });
 
+// Route to verify that the token is valid, it response with either success or Bad Token, both cases which the app 
+// consumes to decide what to execute.
 router.post("/verifyToken", async (req, res) => {
     jwt.verify(req.body.token, config.privateKey, (err, decoded) => {
         if (err || decoded == undefined) {
