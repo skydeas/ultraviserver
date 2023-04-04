@@ -54,6 +54,9 @@ module.exports = {
         addPasswordResetTokenQuery : 'INSERT INTO ' + databaseName + '.account_recovery_tokens (expiration, user_email) VALUES (?,?);',
         deletePasswordResetTokenQuery : 'DELETE FROM ' + databaseName + '.account_recovery_tokens WHERE id=?',
         deletePasswordResetTokenByEmailQuery : 'DELETE FROM ' + databaseName + '.account_recovery_tokens WHERE email=?',
+        // ====== Flight Schedule Rules Table ======
+        selectAllFlightScheduleRulesQuery : 'SELECT * FROM ' + databaseName + '.flight_schedule_rules',
+
 
 
     },
