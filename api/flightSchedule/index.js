@@ -97,6 +97,54 @@ router.get("/getRules", auth.authenticateRequest(20), async (req, res) => {
     });
 });
 
+/**
+ * Route that retrieves all of the entries from our rules table.
+ * We will do the filtering client-side.
+ */
+router.post("/createRule", auth.authenticateRequest(20), multer().none(), async (req, res) => {
+    console.log(req.body);
+   
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        connectionPool.query(config.queries.createFlightScheduleRuleQuery, 
+        [
+            boolToNumber(req.body.formRecurring),
+            req.body.formDate_start,
+            req.body.formDate_end,
+            req.body.formAirline,
+            req.body.formClient,
+            req.body.formRemarks,
+            req.body.formFlight_number,
+            0, // Flight # out, not used, will delete
+            req.body.formScheduled_arrival_time,
+            req.body.formScheduled_departure_time,
+            req.body.formArrival_city,
+            req.body.formDeparture_city,
+            boolToNumber(req.body.formMonday),
+            boolToNumber(req.body.formTuesday),
+            boolToNumber(req.body.formWednesday),
+            boolToNumber(req.body.formThursday),
+            boolToNumber(req.body.formFriday),
+            boolToNumber(req.body.formSaturday),
+            boolToNumber(req.body.formSunday)
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            return res.status(200).send(response);
+        });  
+    })
+});
+
 // Function to delete a token by the token id. (In case a token is expired, or already used.);
 let deleteTokenFromDatabase = function (token_id){
     connectionPool.query(config.queries.deletePasswordResetTokenQuery, [token_id], (err, tokens) => {
@@ -108,5 +156,15 @@ let deleteTokenFromDatabase = function (token_id){
         console.log('token with id: ' + token_id + ' was deleted.');
     });
 }
+
+function boolToNumber(boolString) {
+    tempBool = JSON.parse(boolString);
+    if(tempBool){
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 
 module.exports = router;

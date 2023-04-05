@@ -56,6 +56,7 @@ module.exports = {
         deletePasswordResetTokenByEmailQuery : 'DELETE FROM ' + databaseName + '.account_recovery_tokens WHERE email=?',
         // ====== Flight Schedule Rules Table ======
         selectAllFlightScheduleRulesQuery : 'SELECT * FROM ' + databaseName + '.flight_schedule_rules',
+        createFlightScheduleRuleQuery: 'INSERT INTO ' + databaseName + '.flight_schedule_rules (recurring, date_start, date_end, airline, client, remarks, flight_number, flight_number_out, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city, monday, tuesday, wednesday, thursday, friday, saturday, sunday) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);',
 
 
 
