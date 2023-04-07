@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const config = require('./config/development');
+const moment = require('moment');
 
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
@@ -100,7 +101,7 @@ app.post('/auth/isTokenValid', async function (req, res) {
 
 // POST /login gets urlencoded bodies
 app.post('/auth/local', function (req, res) {
-    console.log('someone logging in!');
+    // console.log('someone logging in!');
     var currentUser;
     // Query database for user.
 
@@ -127,6 +128,7 @@ app.post('/auth/local', function (req, res) {
                 res.sendStatus(403); // Incorrect Response, Handle this better
                 // res.end();
             } else {
+                console.log(`Username ${currentUser[0].username} just logged in at: ${ moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss')}`);
                 // Since passwords match, generate and return JWT with username, expiration timestamp of 2 hours, and task
                 const jwtBearerToken = jwt.sign({
                     _username: currentUser[0].username,
