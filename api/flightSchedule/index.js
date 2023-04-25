@@ -216,6 +216,41 @@ router.get("/getFlightActivityArrivals/:date", auth.authenticateRequest(22), asy
     })
 });
 
+/**
+ * Route that retrieves all of the departures on a given date.
+ * auth request 22 is view flight activity.
+ */
+router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req, res) => {
+    // console.log('unix timestamp passed as req params date: ',req.params.date);
+
+    // Get day of the week
+    const dayOfWeek = moment(req.params.date * 1000).format('dddd').toLowerCase();
+
+    console.log('day of week: ', dayOfWeek);
+    
+    // We hard coded MIA into the query
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        // Not using the config query
+        const query = `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE ${req.params.date} BETWEEN date_start AND date_end AND ${dayOfWeek} = true  AND (arrival_city = 'MIA'  OR departure_city = 'MIA');`;
+
+        connectionPool.query(query, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            return res.status(200).send(response);
+        });  
+    })
+});
+
 
 // Function to delete a token by the token id. (In case a token is expired, or already used.);
 let deleteTokenFromDatabase = function (token_id){
@@ -238,6 +273,7 @@ function boolToNumber(boolString) {
     }
 }
 
+/*
 let seed_airlines = [
     'REA',
     'TSC',
@@ -301,5 +337,5 @@ let seedDatabase = function (){
 function getRandomElementFromArray(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
-
+*/
 module.exports = router;
