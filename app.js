@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const config = require('./config/development');
 const moment = require('moment');
-
+const cron = require('node-cron');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
 
@@ -203,6 +203,18 @@ app.post('/auth/getTasksById', async function (req, res) {
     });
 })
 //#endregion
+
+
+
+/**
+ * This is the job scheduler package we are using to trigger server calls at 2 am every day
+ * For example, moving the 'day' over to the next day.
+ */
+cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month (1-12), day of week (0,7 -> both 0 and 7 represent sunday) 
+  // Your script here
+  console.log('Running script at 2 am');
+});
+
 
 // set port, listen for requests
 const PORT = process.env.PORT || 3000;
