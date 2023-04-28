@@ -133,7 +133,8 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
             boolToNumber(req.body.formThursday),
             boolToNumber(req.body.formFriday),
             boolToNumber(req.body.formSaturday),
-            boolToNumber(req.body.formSunday)
+            boolToNumber(req.body.formSunday),
+            req.body.form_ac_type,
         ], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
@@ -221,48 +222,92 @@ router.get("/getFlightActivityArrivals/:date", auth.authenticateRequest(22), asy
  * auth request 22 is view flight activity.
  */
 router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req, res) => {
-    // console.log('unix timestamp passed as req params date: ',req.params.date);
+    // Get day of the week (For the Query)
 
-    // Get day of the week
-    const dayOfWeek = moment(req.params.date * 1000).format('dddd').toLowerCase();
-
+    // Adding 4 hours to the date so we have local date. Yeah these dates are confusing.
+    const dayOfWeek = moment.unix(parseInt(req.params.date) + (3600 * 4)).format('dddd').toLowerCase();
     console.log('day of week: ', dayOfWeek);
+
+    // Input needs to be mutliplied by 1000 to be used. We need to 
+    // Know what category the request falls into, either: FA, FB, FR
+    // past to today -> Flight Activity
+    // (today + 1) to (today + 14)  2 week buffer periond -> Flight Buffer
+    // (today + 15) and above -> Flight Rules.
+    // Assume the Unix timestamp is stored in a variable called `timestamp`.
+
+    const secondsPerDay = 86400;
+    const date = moment.unix(req.params.date).startOf('day').unix();
+    console.log(date);
+    const today = moment().utc().startOf('day').unix();
+    console.log(today)
+    const timestamp = moment.utc().startOf('day').unix();
+    console.log(timestamp); // output: 1672393600
     
-    // We hard coded MIA into the query
 
-    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
-    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
-        if (err || decoded == undefined) {
-            return res.status(500).send({ message: 'Bad Token' });
-            
-        }
+    // Calculate the difference between the two dates in days.
+    const diffInSeconds = (date - today);
+    const diffInDays = Math.floor(diffInSeconds / secondsPerDay);
+    console.log(diffInDays);
 
-        // Not using the config query
-        const query = `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE ${req.params.date} BETWEEN date_start AND date_end AND ${dayOfWeek} = true  AND (arrival_city = 'MIA'  OR departure_city = 'MIA');`;
+    switch (true) {
+    case diffInDays <= 0:
+        console.log('Case 1: date is on or before today.');
+        break;
+    case diffInDays >= 1 && diffInDays <= 14:
+        // console.log('Case 2: date is between tomorrow and two weeks from now.');
+        
+        // Get Flight Buffer Query
+        // We hard coded MIA into the query, 
+        // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access
 
-        connectionPool.query(query, (err, response) => {
-            if (err) {
-                console.log("Query Error: ", err);
-                return res.status(500).send({ message: 'Internal Server Error' });
+        jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+            if (err || decoded == undefined) {
+                return res.status(500).send({ message: 'Bad Token' });
+                
             }
-            // console.log(response);
-            return res.status(200).send(response);
-        });  
-    })
+            // Not using the config query
+            const query = `SELECT * FROM ultravi_ulav.flight_schedule_buffer WHERE date = ${req.params.date} AND (arrival_city = 'MIA'  OR departure_city = 'MIA');`;
+            console.log(query)
+            connectionPool.query(query, (err, response) => {
+                if (err) {
+                    console.log("Query Error: ", err);
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+                console.log(response);
+                return res.status(200).send(response);
+            });  
+        })
+        break;
+    case diffInDays >= 15:
+        // console.log('Case 3: date is more than two weeks from now.');
+
+        // Get Flight Rules Query
+        // We hard coded MIA into the query, 
+        // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access
+        jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+            if (err || decoded == undefined) {
+                return res.status(500).send({ message: 'Bad Token' });
+                
+            }
+            // Not using the config query
+            const query = `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE ${req.params.date} BETWEEN date_start AND date_end AND ${dayOfWeek} = true  AND (arrival_city = 'MIA'  OR departure_city = 'MIA');`;
+
+            connectionPool.query(query, (err, response) => {
+                if (err) {
+                    console.log("Query Error: ", err);
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+                // console.log(response);
+                return res.status(200).send(response);
+            });  
+        })
+        break;
+    }
+
+
+    
+
 });
-
-
-// Function to delete a token by the token id. (In case a token is expired, or already used.);
-let deleteTokenFromDatabase = function (token_id){
-    connectionPool.query(config.queries.deletePasswordResetTokenQuery, [token_id], (err, tokens) => {
-        if (err) {
-            console.log("Query Error: ", err);
-            return res.status(500).send({ message: 'Internal Server Error' });
-        }
-
-        console.log('token with id: ' + token_id + ' was deleted.');
-    });
-}
 
 function boolToNumber(boolString) {
     tempBool = JSON.parse(boolString);
@@ -273,69 +318,4 @@ function boolToNumber(boolString) {
     }
 }
 
-/*
-let seed_airlines = [
-    'REA',
-    'TSC',
-    'GXA',
-    'THY',
-    'KAL',
-    'ARG',
-    'SHH',
-    'SWQ',
-    'QTR'
-]
-
-let seed_clients = [
-    'AEROCUBA',
-    'CLASSIC AIR',
-    'XAEL',
-    'APA',
-    'GTEAR',
-    'M81',
-    'GBU2',
-    'GOGO',
-    'SOSONO'
-]
-
-let seed_airports = [
-    'ATL', 'LAX', 'ORD', 'DFW', 'DEN', 'JFK', 'SFO', 'SEA', 'LAS', 'MCO',
-    'EWR', 'CLT', 'PHX', 'IAH', 'MIA', 'BOS', 'MSP', 'FLL', 'DTW', 'PHL',
-    'LGA', 'BWI', 'SLC', 'SAN', 'IAD', 'DCA', 'MDW', 'TPA', 'PDX', 'HNL',
-    'SJU', 'RSW', 'SJC', 'SMF', 'BUR', 'MCI', 'CLE', 'OAK', 'MSY', 'PIT',
-    'CVG', 'RDU', 'IND', 'SAT', 'CMH', 'OGG', 'AUS', 'MEM', 'JAX', 'BUF'
-];
-
-let seed_remarks = [
-    'LVLV',
-    'CARGO',
-    'SPY PLANE',
-    'TOW TO GATE',
-    'PILOT SAYS HI',
-    '5 WCH'
-]
-
-let seedDatabase = function (){
-    // First get Airline
-    let al = getRandomElementFromArray(seed_airlines);
-    let cl = getRandomElementFromArray(seed_clients);
-
-
-
-
-
-    connectionPool.query(config.queries.deletePasswordResetTokenQuery, [], (err, tokens) => {
-        if (err) {
-            console.log("Query Error: ", err);
-            return res.status(500).send({ message: 'Internal Server Error' });
-        }
-
-        console.log('token with id: ' + ' was deleted.');
-    });
-}
-
-function getRandomElementFromArray(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-*/
 module.exports = router;

@@ -211,9 +211,44 @@ app.post('/auth/getTasksById', async function (req, res) {
  * For example, moving the 'day' over to the next day.
  */
 cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month (1-12), day of week (0,7 -> both 0 and 7 represent sunday) 
-  // Your script here
-  console.log('Running script at 2 am');
+    // console.log('Running script at 2 am');
+
+
+    /**   We should do a couple of things
+     *    Flight buffer filling: We have to grab the item from 14 days away and insert it into the buffer
+     *    Once we have inserted those days 
+     */
+    const secondsPerDay = 86400;
+    const date = moment.utc().startOf('day').unix();
+    let date_object_to_compare = date + (14 * secondsPerDay); // Today + 14
+    const dayOfWeek = moment((date_object_to_compare + ((86400 / 24) * 4 ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
+    console.log('day of the week: ', dayOfWeek);
+
+    console.log('date: ',date);
+    console.log('date_object_to_compare: ',date_object_to_compare);
+
+    let copyFromRulesToBufferQuery = 
+        `INSERT INTO ultravi_ulav.flight_schedule_buffer 
+        (date, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type)
+        SELECT ${date_object_to_compare}, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type
+        FROM ultravi_ulav.flight_schedule_rules
+        WHERE ${date_object_to_compare} BETWEEN date_start AND date_end AND ${dayOfWeek} = true`;
+
+
+    // API Route to get all tasks available to the ID passed in the parameter.
+    connectionPool.query(copyFromRulesToBufferQuery, (err, response) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            throw err
+        }
+
+        console.log(response);
+    });
+
+    // WAIT, rules dont have 'date', how am I selecting when to insert? Do i have to use the trick of monday/tuesday/wahtever?
+    console.log(copyFromRulesToBufferQuery);
 });
+
 
 
 // set port, listen for requests
