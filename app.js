@@ -220,34 +220,73 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
      */
     const secondsPerDay = 86400;
     const date = moment.utc().startOf('day').unix();
-    let date_object_to_compare = date + (14 * secondsPerDay); // Today + 14
-    const dayOfWeek = moment((date_object_to_compare + ((86400 / 24) * 4 ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
+    let date_object_14_days_from_now = date + (14 * secondsPerDay); // Today + 14
+    const dayOfWeek = moment((date_object_14_days_from_now + ((86400 / 24) * 4 ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
     console.log('day of the week: ', dayOfWeek);
 
     console.log('date: ',date);
-    console.log('date_object_to_compare: ',date_object_to_compare);
+    console.log('date_object_14_days_from_now: ',date_object_14_days_from_now);
 
+    /*
     let copyFromRulesToBufferQuery = 
         `INSERT INTO ultravi_ulav.flight_schedule_buffer 
         (date, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type)
-        SELECT ${date_object_to_compare}, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type
+        SELECT ${date_object_14_days_from_now}, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type
         FROM ultravi_ulav.flight_schedule_rules
-        WHERE ${date_object_to_compare} BETWEEN date_start AND date_end AND ${dayOfWeek} = true`;
-
+        WHERE ${date_object_14_days_from_now} BETWEEN date_start AND date_end AND ${dayOfWeek} = true`;
+    */
+   let getFlightRulesQuery = 
+        `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE ${date_object_14_days_from_now} BETWEEN date_start AND date_end AND ${dayOfWeek} = true`;
 
     // API Route to get all tasks available to the ID passed in the parameter.
-    connectionPool.query(copyFromRulesToBufferQuery, (err, response) => {
+    connectionPool.query(getFlightRulesQuery, (err, response) => {
         if (err) {
             console.log("Query Error: ", err);
             throw err
         }
 
-        console.log(response);
-    });
+        // console.log('response.length = ', response.length);
 
-    // WAIT, rules dont have 'date', how am I selecting when to insert? Do i have to use the trick of monday/tuesday/wahtever?
-    console.log(copyFromRulesToBufferQuery);
+        for(let index = 0; index < response.length; index++){
+            // console.log('index =',index);
+            // console.log('UniqueBufferID: ', generateBufferID(response[index], date_object_14_days_from_now))
+
+            let next_leg_pointer_object_generatedID;
+            
+            if(response[index].next_leg_pointer == null){
+                next_leg_pointer_object_generatedID = null;
+            } else {
+                const flight = response.find(f => f.id === response[index].next_leg_pointer);
+                next_leg_pointer_object_generatedID = generateBufferID(flight, date_object_14_days_from_now)
+                // console.log(flight);
+            }
+
+
+            /**
+             *  id, date, airline, client,
+             *  remarks, flight_number, scheduled_arrival_time, 
+             *  scheduled_departure_time, arrival_city, 
+             *  departure_city,next_leg_pointer,ac_type)
+             */
+            let insertQuery = `INSERT INTO ultravi_ulav.flight_schedule_buffer(generated_id, date, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type) VALUES ('${generateBufferID(response[index], date_object_14_days_from_now)}', ${date_object_14_days_from_now}, '${response[index].airline}', '${response[index].client}', '${response[index].remarks}', ${response[index].flight_number}, '${response[index].scheduled_arrival_time}', '${response[index].scheduled_departure_time}', '${response[index].arrival_city}', '${response[index].departure_city}', ${next_leg_pointer_object_generatedID ? `'${next_leg_pointer_object_generatedID}'` : null}, ${response[index].ac_type ? `'${response[index].ac_type}'` : 'null'})`
+
+            // console.log('query: ', insertQuery);
+            // Query to insert to buffer
+            connectionPool.query(insertQuery, (err, response) => {
+                if (err) {
+                    console.log("Query Error: ", err);
+                    throw err
+                }
+                console.log(response);
+            });
+        }
+    });
 });
+
+generateBufferID = function(databaseObject, todayDateTimeStamp){
+    let uniqueBufferID = todayDateTimeStamp + '-' + databaseObject.airline + '-' + databaseObject.flight_number
+    return uniqueBufferID;
+}
 
 
 

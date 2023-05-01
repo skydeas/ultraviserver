@@ -220,9 +220,23 @@ router.get("/getFlightActivityArrivals/:date", auth.authenticateRequest(22), asy
 /**
  * Route that retrieves all of the departures on a given date.
  * auth request 22 is view flight activity.
+ * @param date: the date we are getting is a LOCAL unix timestamp. we must convert it to UTC and then to the startOf('day'); 
  */
 router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req, res) => {
     // Get day of the week (For the Query)
+    console.log('Unedited date: ', req.params.date);
+    let localMoment = moment.unix(req.params.date)
+    console.log('localMoment: ', localMoment);
+
+    // Get the UTC offset for the local timestamp
+    const utcOffsetSeconds = localMoment.utcOffset() * 60;
+    console.log('utcOffsetSeconds: ', utcOffsetSeconds);
+
+    // Convert the local timestamp to UTC timestamp by subtracting the UTC offset
+    const utcTimestamp = localMoment.unix() - utcOffsetSeconds;
+
+    console.log('utcTimestamp', utcTimestamp); // Output: 
+
 
     // Adding 4 hours to the date so we have local date. Yeah these dates are confusing.
     const dayOfWeek = moment.unix(parseInt(req.params.date) + (3600 * 4)).format('dddd').toLowerCase();
@@ -250,8 +264,11 @@ router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req,
     console.log(diffInDays);
 
     switch (true) {
-    case diffInDays <= 0:
-        console.log('Case 1: date is on or before today.');
+    case diffInDays < 0:
+        console.log('Case 1: date is before today.');
+        break;
+    case diffInDays == 0:
+        console.log('Case 2: date is today.');
         break;
     case diffInDays >= 1 && diffInDays <= 14:
         // console.log('Case 2: date is between tomorrow and two weeks from now.');
@@ -266,7 +283,7 @@ router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req,
                 
             }
             // Not using the config query
-            const query = `SELECT * FROM ultravi_ulav.flight_schedule_buffer WHERE date = ${req.params.date} AND (arrival_city = 'MIA'  OR departure_city = 'MIA');`;
+            const query = `SELECT * FROM ultravi_ulav.flight_schedule_buffer WHERE ${req.params.date} BETWEEN date AND (date + 86399)  AND (arrival_city = 'MIA'  OR departure_city = 'MIA');`
             console.log(query)
             connectionPool.query(query, (err, response) => {
                 if (err) {
