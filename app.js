@@ -213,13 +213,12 @@ app.post('/auth/getTasksById', async function (req, res) {
 cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month (1-12), day of week (0,7 -> both 0 and 7 represent sunday) 
     // console.log('Running script at 2 am');
 
-
     /**   We should do a couple of things
-     *    Flight buffer filling: We have to grab the item from 14 days away and insert it into the buffer
-     *    Once we have inserted those days 
-     */
+         *    Flight buffer filling: We have to grab the item from 14 days away and insert it into the buffer
+         *    Once we have inserted those days 
+         */
     const secondsPerDay = 86400;
-    const date = moment.utc().startOf('day').unix();
+    const date = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
     let date_object_14_days_from_now = date + (14 * secondsPerDay); // Today + 14
     const dayOfWeek = moment((date_object_14_days_from_now + ((86400 / 24) * 4 ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
     console.log('day of the week: ', dayOfWeek);
@@ -235,7 +234,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
         FROM ultravi_ulav.flight_schedule_rules
         WHERE ${date_object_14_days_from_now} BETWEEN date_start AND date_end AND ${dayOfWeek} = true`;
     */
-   let getFlightRulesQuery = 
+    let getFlightRulesQuery = 
         `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE ${date_object_14_days_from_now} BETWEEN date_start AND date_end AND ${dayOfWeek} = true`;
 
     // API Route to get all tasks available to the ID passed in the parameter.
@@ -281,10 +280,37 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
             });
         }
     });
+    
+
+    // Move TODAY to flight Activity:
+    let copyFromBufferToActivityQuery = 
+        `INSERT INTO ultravi_ulav.flight_schedule_activity 
+        (date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type)
+        SELECT date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city,next_leg_pointer, ac_type
+        FROM ultravi_ulav.flight_schedule_buffer
+        WHERE date = ${date}`;
+
+    connectionPool.query(copyFromBufferToActivityQuery, (err, response) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            throw err
+        }
+
+        // Data base been copied, delete the rest?
+        connectionPool.query(`DELETE FROM ultravi_ulav.flight_schedule_buffer WHERE date = ${date}`, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                throw err
+            }
+            // Data base been copied, delete the rest?
+            
+        });
+    });
+    
 });
 
 generateBufferID = function(databaseObject, todayDateTimeStamp){
-    let uniqueBufferID = todayDateTimeStamp + '-' + databaseObject.airline + '-' + databaseObject.flight_number
+    let uniqueBufferID = todayDateTimeStamp + '-' + databaseObject.airline + '-' + databaseObject.flight_number + '-' + databaseObject.scheduled_departure_time
     return uniqueBufferID;
 }
 

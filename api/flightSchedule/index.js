@@ -265,10 +265,39 @@ router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req,
 
     switch (true) {
     case diffInDays < 0:
+
+
         console.log('Case 1: date is before today.');
+
+
         break;
     case diffInDays == 0:
+
+
         console.log('Case 2: date is today.');
+
+        // Get Flight Buffer Query
+        // We hard coded MIA into the query, 
+        // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access
+
+        jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+            if (err || decoded == undefined) {
+                return res.status(500).send({ message: 'Bad Token' });
+                
+            }
+            // Not using the config query
+            const query = `SELECT * FROM ultravi_ulav.flight_schedule_activity WHERE ${req.params.date} BETWEEN date AND (date + 86399)  AND (arrival_city = 'MIA'  OR departure_city = 'MIA');`
+            console.log(query)
+            connectionPool.query(query, (err, response) => {
+                if (err) {
+                    console.log("Query Error: ", err);
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+                console.log(response);
+                return res.status(200).send(response);
+            });  
+        })
+
         break;
     case diffInDays >= 1 && diffInDays <= 14:
         // console.log('Case 2: date is between tomorrow and two weeks from now.');
