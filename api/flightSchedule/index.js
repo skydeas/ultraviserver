@@ -239,7 +239,9 @@ router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req,
 
 
     // Adding 4 hours to the date so we have local date. Yeah these dates are confusing.
-    const dayOfWeek = moment.unix(parseInt(req.params.date) + (3600 * 4)).format('dddd').toLowerCase();
+    let utcOffset = getUtcOffsetInHours();
+    console.log('offset: ', utcOffset)
+    const dayOfWeek = moment.unix(parseInt(req.params.date) + (3600 * utcOffset)).format('dddd').toLowerCase();
     console.log('day of week: ', dayOfWeek);
 
     // Input needs to be mutliplied by 1000 to be used. We need to 
@@ -250,7 +252,7 @@ router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req,
     // Assume the Unix timestamp is stored in a variable called `timestamp`.
 
     const secondsPerDay = 86400;
-    const date = moment.unix(req.params.date).startOf('day').unix();
+    const date = moment.unix(req.params.date).unix();
     console.log(date);
     const today = moment().utc().startOf('day').unix();
     console.log(today)
@@ -367,6 +369,11 @@ router.get("/getFlightActivity/:date", auth.authenticateRequest(22), async (req,
         break;
     }
 });
+
+function getUtcOffsetInHours() {
+    let utcOffset = (Math.abs(moment().utcOffset()) / 60);
+    return utcOffset;
+  }
 
 function boolToNumber(boolString) {
     tempBool = JSON.parse(boolString);
