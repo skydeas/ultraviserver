@@ -214,13 +214,14 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     // console.log('Running script at 2 am');
 
     /**   We should do a couple of things
-         *    Flight buffer filling: We have to grab the item from 14 days away and insert it into the buffer
-         *    Once we have inserted those days 
-         */
+     *    Flight buffer filling: We have to grab the item from 14 days away and insert it into the buffer
+     *    Once we have inserted those days 
+    */
     const secondsPerDay = 86400;
     const date = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
     let date_object_14_days_from_now = date + (14 * secondsPerDay); // Today + 14
-    const dayOfWeek = moment((date_object_14_days_from_now + ((86400 / 24) * 4 ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
+    const localTimezoneOffset = Math.abs((moment().utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
+    const dayOfWeek = moment((date_object_14_days_from_now + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
     console.log('day of the week: ', dayOfWeek);
 
     console.log('date: ',date);
