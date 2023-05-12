@@ -49,6 +49,11 @@ module.exports = {
         addAirportQuery : 'INSERT INTO ' + databaseName + '.airports (IATA, ICAO, AirportName, City, Country, Latitude, Longitude, Altitude, TZ) VALUES (?,?,?,?,?,?,?,?,?);',
         updateAirportQuery : 'UPDATE ' + databaseName + '.airports SET IATA=?,ICAO=?,AirportName=?,City=?,Country=?,Latitude=?,Longitude=?,Altitude=?,TZ=? WHERE id=?',
         deleteAirportQuery : 'DELETE FROM ' + databaseName + '.airports WHERE id=?',
+        // ====== Airlines Table ======
+        selectAllAirlinesQuery : 'SELECT * FROM ' + databaseName + '.airlines',
+        addAirlineQuery : 'INSERT INTO ' + databaseName + '.airlines (name, code) VALUES (?,?);',
+        updateAirlineQuery : 'UPDATE ' + databaseName + '.airlines SET name=?,code=? WHERE id=?',
+        deleteAirlineQuery : 'DELETE FROM ' + databaseName + '.airlines WHERE id=?',
         // ====== Password Resert Tokens Table ======
         selectAllPasswordResetTokensQuery : 'SELECT * FROM ' + databaseName + '.account_recovery_tokens',
         addPasswordResetTokenQuery : 'INSERT INTO ' + databaseName + '.account_recovery_tokens (expiration, user_email) VALUES (?,?);',

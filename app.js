@@ -69,6 +69,8 @@ app.use('/api/documents', require('./api/documents'));
 
 app.use('/api/airport', require('./api/airports'));
 
+app.use('/api/airline', require('./api/airlines'));
+
 app.use('/api/mailer', require('./api/mailer'));
 
 app.use('/api/token', require('./api/token'));
