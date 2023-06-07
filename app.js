@@ -224,11 +224,10 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     let date_object_14_days_from_now = date + (14 * secondsPerDay); // Today + 14
     const localTimezoneOffset = Math.abs((moment().utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
     const dayOfWeek = moment((date_object_14_days_from_now + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
+    
     console.log('day of the week: ', dayOfWeek);
-
     console.log('date: ',date);
-    console.log('date_object_14_days_from_now: ',date_object_14_days_from_now);
-
+    
     let generateAndInsertLegsQuery = 
         `INSERT INTO ultravi_ulav.flight_schedule_buffer(
             generated_id, date, airline, client, 
@@ -250,7 +249,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
               subquery.next_leg_pointer,
               subquery.ac_type
           FROM (
-              SELECT id, CONCAT(id, (${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60))) as generated_id,  ${date_object_14_days_from_now} as date, airline, client, remarks, flight_number, ${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60) as scheduled_departure_time, (${date_object_14_days_from_now} + (HOUR(scheduled_arrival_time) * 3600) + (MINUTE(scheduled_arrival_time) * 60)  + IF(scheduled_arrival_time < scheduled_departure_time, 86400, 0)) as scheduled_arrival_time, arrival_city, departure_city, ac_type,   IF(
+              SELECT id, CONCAT(id, ((${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60) + (std_offset * 86400)))) as generated_id,  ${date_object_14_days_from_now} as date, airline, client, remarks, flight_number, (${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60) + (std_offset * 86400)) as scheduled_departure_time, (${date_object_14_days_from_now} + (HOUR(scheduled_arrival_time) * 3600) + (MINUTE(scheduled_arrival_time) * 60)  + (sta_offset * 86400)) as scheduled_arrival_time, arrival_city, departure_city, ac_type,   IF(
                   next_leg_pointer IS NOT NULL,
                   CONCAT( inner_subquery.next_leg_pointer,
                             (
@@ -272,6 +271,8 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
           ) AS subquery;  
           `
 
+                // console.log('query: ', generateAndInsertLegsQuery);
+
     // Insert new rules onto buffer in a single query.
     connectionPool.query(generateAndInsertLegsQuery, (err, response) => {
         if (err) {
@@ -281,6 +282,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
 
         console.log(response)
     });
+    
     
 
     // Move TODAY to flight Activity:

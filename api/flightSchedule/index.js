@@ -9,6 +9,8 @@ const connectionPool = mysql.connectionPool;
 const mailer = require('../mailer');
 const moment = require('moment');
 
+let POVCity = 'MIA';
+
 // =================== Middlewares ===========================
 
 /**
@@ -65,6 +67,8 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
             boolToNumber(req.body.formSaturday),
             boolToNumber(req.body.formSunday),
             req.body.form_ac_type,
+            req.body.form_sta_offset,
+            req.body.form_std_offset,
         ], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
@@ -95,8 +99,29 @@ router.post("/getFlightActivity", auth.authenticateRequest(22), async (req, res)
  * @param until the timestamp that we will use as the upper bound of our query for dates. From < date we want < Until
  */
 router.post("/getFlightBuffer", auth.authenticateRequest(22), async (req, res) => {
-    console.log('Request.body: ', JSON.stringify(req.body));
-    res.status(200).send({'message': 'buffer'});
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        // =============== For utcOffset ====================
+        let offsetMinutes = moment().utcOffset();
+
+        let query = `SELECT * FROM ultravi_ulav.flight_schedule_buffer WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
+        console.log('Query: ', query);
+        connectionPool.query(query, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            console.log(response);
+            return res.status(200).send(response);
+        }); 
+    })
 });
 
 /**
@@ -125,9 +150,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
         // =============== For utcOffset ====================
         let offsetMinutes = moment().utcOffset();
 
-
-        // let query = `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE ${middleOfDay} BETWEEN date_start AND date_end AND ${dayOfWeek} = true AND (arrival_city = 'MIA' OR departure_city = 'MIA');`
-        let query = `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE (arrival_city = 'MIA'  AND (${req.body.from} + (HOUR(scheduled_arrival_time)* 3600) + (MINUTE(scheduled_arrival_time) * 60) + (${offsetMinutes} * 60) BETWEEN date_start AND date_end) AND ${dayOfWeek} = true) OR (departure_city = 'MIA'  AND (${req.body.from} + (HOUR(scheduled_departure_time)* 3600) + (MINUTE(scheduled_departure_time) * 60) + (${offsetMinutes} * 60) BETWEEN date_start AND date_end) AND ${dayOfWeek} = true);`
+        let query = `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE (arrival_city = '${POVCity}'  AND (${req.body.from} + (HOUR(scheduled_arrival_time)* 3600) + (MINUTE(scheduled_arrival_time) * 60) + (${offsetMinutes} * 60) BETWEEN date_start AND date_end) AND ${dayOfWeek} = true) OR (departure_city = '${POVCity}'  AND (${req.body.from} + (HOUR(scheduled_departure_time)* 3600) + (MINUTE(scheduled_departure_time) * 60) + (${offsetMinutes} * 60) BETWEEN date_start AND date_end) AND ${dayOfWeek} = true);`
         console.log('Query: ', query);
         connectionPool.query(query, (err, response) => {
             if (err) {
