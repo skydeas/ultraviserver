@@ -68,7 +68,7 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
             boolToNumber(req.body.formSunday),
             req.body.form_ac_type,
             req.body.form_sta_offset,
-            req.body.form_std_offset,
+            // req.body.form_std_offset, DEPRECATED
         ], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
@@ -162,26 +162,112 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
         let query = 
         `
         SELECT 
-        * 
+            * 
         FROM 
             (
             SELECT 
-                * 
+                queryDateInside.generated_id, 
+                queryDateInside.date, 
+                queryDateInside.airline, 
+                queryDateInside.client, 
+                queryDateInside.remarks, 
+                queryDateInside.flight_number, 
+                queryDateInside.scheduled_arrival_time, 
+                queryDateInside.scheduled_departure_time, 
+                queryDateInside.arrival_city, 
+                queryDateInside.departure_city, 
+                queryDateInside.next_leg_pointer, 
+                queryDateInside.ac_type 
             FROM 
                 (
                 SELECT 
-                    queryDateInside.generated_id, 
-                    queryDateInside.date, 
-                    queryDateInside.airline, 
-                    queryDateInside.client, 
-                    queryDateInside.remarks, 
-                    queryDateInside.flight_number, 
-                    queryDateInside.scheduled_arrival_time, 
-                    queryDateInside.scheduled_departure_time, 
-                    queryDateInside.arrival_city, 
-                    queryDateInside.departure_city, 
-                    queryDateInside.next_leg_pointer, 
-                    queryDateInside.ac_type 
+                    id, 
+                    CONCAT(
+                    id, 
+                    (
+                        (
+                        ${fromUtc} + (
+                            HOUR(scheduled_departure_time) * 3600
+                        ) + (
+                            MINUTE(scheduled_departure_time) * 60
+                        )
+                        )
+                    )
+                    ) as generated_id, 
+                    ${fromUtc} as date, 
+                    airline, 
+                    client, 
+                    remarks, 
+                    flight_number, 
+                    (
+                    ${fromUtc} + (
+                        HOUR(scheduled_departure_time) * 3600
+                    ) + (
+                        MINUTE(scheduled_departure_time) * 60
+                    )
+                    ) as scheduled_departure_time, 
+                    (
+                    ${fromUtc} + (
+                        HOUR(scheduled_arrival_time) * 3600
+                    ) + (
+                        MINUTE(scheduled_arrival_time) * 60
+                    ) + (sta_offset * 86400)
+                    ) as scheduled_arrival_time, 
+                    arrival_city, 
+                    departure_city, 
+                    ac_type, 
+                    IF(
+                    next_leg_pointer IS NOT NULL, 
+                    CONCAT(
+                        inner_queryDate.next_leg_pointer, 
+                        (
+                        SELECT 
+                            ${fromUtc} + (
+                            HOUR(t.scheduled_departure_time) * 3600
+                            ) + (
+                            MINUTE(t.scheduled_departure_time) * 60
+                            ) 
+                        FROM 
+                            ultravi_ulav.flight_schedule_rules t 
+                        WHERE 
+                            t.id = inner_queryDate.next_leg_pointer
+                        )
+                    ), 
+                    NULL
+                    ) AS next_leg_pointer 
+                FROM 
+                    (
+                    SELECT 
+                        * 
+                    FROM 
+                        ultravi_ulav.flight_schedule_rules 
+                    WHERE 
+                        (
+                        ${fromUtc} + (
+                            HOUR(scheduled_departure_time) * 3600
+                        ) + (
+                            MINUTE(scheduled_departure_time) * 60
+                        ) BETWEEN date_start 
+                        AND date_end
+                        ) 
+                        AND ${dayOfWeek} = true
+                    ) as inner_queryDate
+                ) as queryDateInside 
+            UNION 
+                (
+                SELECT 
+                    queryDateInsideMinusOne.generated_id, 
+                    queryDateInsideMinusOne.date, 
+                    queryDateInsideMinusOne.airline, 
+                    queryDateInsideMinusOne.client, 
+                    queryDateInsideMinusOne.remarks, 
+                    queryDateInsideMinusOne.flight_number, 
+                    queryDateInsideMinusOne.scheduled_arrival_time, 
+                    queryDateInsideMinusOne.scheduled_departure_time, 
+                    queryDateInsideMinusOne.arrival_city, 
+                    queryDateInsideMinusOne.departure_city, 
+                    queryDateInsideMinusOne.next_leg_pointer, 
+                    queryDateInsideMinusOne.ac_type 
                 FROM 
                     (
                     SELECT 
@@ -190,28 +276,28 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                         id, 
                         (
                             (
-                            ${fromUtc} + (
+                            ${fromUtcMinusOne} + (
                                 HOUR(scheduled_departure_time) * 3600
                             ) + (
                                 MINUTE(scheduled_departure_time) * 60
-                            ) + (std_offset * 86400)
+                            )
                             )
                         )
                         ) as generated_id, 
-                        ${fromUtc} as date, 
+                        ${fromUtcMinusOne} as date, 
                         airline, 
                         client, 
                         remarks, 
                         flight_number, 
                         (
-                        ${fromUtc} + (
+                        ${fromUtcMinusOne} + (
                             HOUR(scheduled_departure_time) * 3600
                         ) + (
                             MINUTE(scheduled_departure_time) * 60
-                        ) + (std_offset * 86400)
+                        )
                         ) as scheduled_departure_time, 
                         (
-                        ${fromUtc} + (
+                        ${fromUtcMinusOne} + (
                             HOUR(scheduled_arrival_time) * 3600
                         ) + (
                             MINUTE(scheduled_arrival_time) * 60
@@ -223,10 +309,10 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                         IF(
                         next_leg_pointer IS NOT NULL, 
                         CONCAT(
-                            inner_queryDate.next_leg_pointer, 
+                            inner_queryDateMinusOne.next_leg_pointer, 
                             (
                             SELECT 
-                                ${fromUtc} + (
+                                ${fromUtcMinusOne} + (
                                 HOUR(t.scheduled_departure_time) * 3600
                                 ) + (
                                 MINUTE(t.scheduled_departure_time) * 60
@@ -234,7 +320,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                             FROM 
                                 ultravi_ulav.flight_schedule_rules t 
                             WHERE 
-                                t.id = inner_queryDate.next_leg_pointer
+                                t.id = inner_queryDateMinusOne.next_leg_pointer
                             )
                         ), 
                         NULL
@@ -247,200 +333,109 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                             ultravi_ulav.flight_schedule_rules 
                         WHERE 
                             (
-                            ${fromUtc} + (
+                            ${fromUtcMinusOne} + (
                                 HOUR(scheduled_departure_time) * 3600
                             ) + (
                                 MINUTE(scheduled_departure_time) * 60
                             ) BETWEEN date_start 
                             AND date_end
                             ) 
-                            AND ${dayOfWeek} = true
-                        ) as inner_queryDate
-                    ) as queryDateInside 
-                UNION 
+                            AND ${dayOfWeekMinusOne} = true
+                        ) as inner_queryDateMinusOne
+                    ) as queryDateInsideMinusOne
+                ) 
+            UNION 
+                (
+                SELECT 
+                    queryDateInsidePlusOne.generated_id, 
+                    queryDateInsidePlusOne.date, 
+                    queryDateInsidePlusOne.airline, 
+                    queryDateInsidePlusOne.client, 
+                    queryDateInsidePlusOne.remarks, 
+                    queryDateInsidePlusOne.flight_number, 
+                    queryDateInsidePlusOne.scheduled_arrival_time, 
+                    queryDateInsidePlusOne.scheduled_departure_time, 
+                    queryDateInsidePlusOne.arrival_city, 
+                    queryDateInsidePlusOne.departure_city, 
+                    queryDateInsidePlusOne.next_leg_pointer, 
+                    queryDateInsidePlusOne.ac_type 
+                FROM 
                     (
                     SELECT 
-                        queryDateInsideMinusOne.generated_id, 
-                        queryDateInsideMinusOne.date, 
-                        queryDateInsideMinusOne.airline, 
-                        queryDateInsideMinusOne.client, 
-                        queryDateInsideMinusOne.remarks, 
-                        queryDateInsideMinusOne.flight_number, 
-                        queryDateInsideMinusOne.scheduled_arrival_time, 
-                        queryDateInsideMinusOne.scheduled_departure_time, 
-                        queryDateInsideMinusOne.arrival_city, 
-                        queryDateInsideMinusOne.departure_city, 
-                        queryDateInsideMinusOne.next_leg_pointer, 
-                        queryDateInsideMinusOne.ac_type 
-                    FROM 
+                        id, 
+                        CONCAT(
+                        id, 
                         (
-                        SELECT 
-                            id, 
-                            CONCAT(
-                            id, 
-                            (
-                                (
-                                ${fromUtcMinusOne} + (
-                                    HOUR(scheduled_departure_time) * 3600
-                                ) + (
-                                    MINUTE(scheduled_departure_time) * 60
-                                ) + (std_offset * 86400)
-                                )
-                            )
-                            ) as generated_id, 
-                            ${fromUtcMinusOne} as date, 
-                            airline, 
-                            client, 
-                            remarks, 
-                            flight_number, 
-                            (
-                            ${fromUtcMinusOne} + (
-                                HOUR(scheduled_departure_time) * 3600
-                            ) + (
-                                MINUTE(scheduled_departure_time) * 60
-                            ) + (std_offset * 86400)
-                            ) as scheduled_departure_time, 
-                            (
-                            ${fromUtcMinusOne} + (
-                                HOUR(scheduled_arrival_time) * 3600
-                            ) + (
-                                MINUTE(scheduled_arrival_time) * 60
-                            ) + (sta_offset * 86400)
-                            ) as scheduled_arrival_time, 
-                            arrival_city, 
-                            departure_city, 
-                            ac_type, 
-                            IF(
-                            next_leg_pointer IS NOT NULL, 
-                            CONCAT(
-                                inner_queryDateMinusOne.next_leg_pointer, 
-                                (
-                                SELECT 
-                                    ${fromUtcMinusOne} + (
-                                    HOUR(t.scheduled_departure_time) * 3600
-                                    ) + (
-                                    MINUTE(t.scheduled_departure_time) * 60
-                                    ) 
-                                FROM 
-                                    ultravi_ulav.flight_schedule_rules t 
-                                WHERE 
-                                    t.id = inner_queryDateMinusOne.next_leg_pointer
-                                )
-                            ), 
-                            NULL
-                            ) AS next_leg_pointer 
-                        FROM 
-                            (
-                            SELECT 
-                                * 
-                            FROM 
-                                ultravi_ulav.flight_schedule_rules 
-                            WHERE 
-                                (
-                                ${fromUtcMinusOne} + (
-                                    HOUR(scheduled_departure_time) * 3600
-                                ) + (
-                                    MINUTE(scheduled_departure_time) * 60
-                                ) BETWEEN date_start 
-                                AND date_end
-                                ) 
-                                AND ${dayOfWeekMinusOne} = true
-                            ) as inner_queryDateMinusOne
-                        ) as queryDateInsideMinusOne
-                    ) 
-                UNION 
-                    (
-                    SELECT 
-                        queryDateInsidePlusOne.generated_id, 
-                        queryDateInsidePlusOne.date, 
-                        queryDateInsidePlusOne.airline, 
-                        queryDateInsidePlusOne.client, 
-                        queryDateInsidePlusOne.remarks, 
-                        queryDateInsidePlusOne.flight_number, 
-                        queryDateInsidePlusOne.scheduled_arrival_time, 
-                        queryDateInsidePlusOne.scheduled_departure_time, 
-                        queryDateInsidePlusOne.arrival_city, 
-                        queryDateInsidePlusOne.departure_city, 
-                        queryDateInsidePlusOne.next_leg_pointer, 
-                        queryDateInsidePlusOne.ac_type 
-                    FROM 
-                        (
-                        SELECT 
-                            id, 
-                            CONCAT(
-                            id, 
-                            (
-                                (
-                                ${fromUtcPlusOne} + (
-                                    HOUR(scheduled_departure_time) * 3600
-                                ) + (
-                                    MINUTE(scheduled_departure_time) * 60
-                                ) + (std_offset * 86400)
-                                )
-                            )
-                            ) as generated_id, 
-                            ${fromUtcPlusOne} as date, 
-                            airline, 
-                            client, 
-                            remarks, 
-                            flight_number, 
                             (
                             ${fromUtcPlusOne} + (
                                 HOUR(scheduled_departure_time) * 3600
                             ) + (
                                 MINUTE(scheduled_departure_time) * 60
-                            ) + (std_offset * 86400)
-                            ) as scheduled_departure_time, 
-                            (
-                            ${fromUtcPlusOne} + (
-                                HOUR(scheduled_arrival_time) * 3600
-                            ) + (
-                                MINUTE(scheduled_arrival_time) * 60
-                            ) + (sta_offset * 86400)
-                            ) as scheduled_arrival_time, 
-                            arrival_city, 
-                            departure_city, 
-                            ac_type, 
-                            IF(
-                            next_leg_pointer IS NOT NULL, 
-                            CONCAT(
-                                inner_queryDatePlusOne.next_leg_pointer, 
-                                (
-                                SELECT 
-                                    ${fromUtcPlusOne} + (
-                                    HOUR(t.scheduled_departure_time) * 3600
-                                    ) + (
-                                    MINUTE(t.scheduled_departure_time) * 60
-                                    ) 
-                                FROM 
-                                    ultravi_ulav.flight_schedule_rules t 
-                                WHERE 
-                                    t.id = inner_queryDatePlusOne.next_leg_pointer
-                                )
-                            ), 
-                            NULL
-                            ) AS next_leg_pointer 
-                        FROM 
+                            )
+                            )
+                        )
+                        ) as generated_id, 
+                        ${fromUtcPlusOne} as date, 
+                        airline, 
+                        client, 
+                        remarks, 
+                        flight_number, 
+                        (
+                        ${fromUtcPlusOne} + (
+                            HOUR(scheduled_departure_time) * 3600
+                        ) + (
+                            MINUTE(scheduled_departure_time) * 60
+                        )
+                        ) as scheduled_departure_time, 
+                        (
+                        ${fromUtcPlusOne} + (
+                            HOUR(scheduled_arrival_time) * 3600
+                        ) + (
+                            MINUTE(scheduled_arrival_time) * 60
+                        ) + (sta_offset * 86400)
+                        ) as scheduled_arrival_time, 
+                        arrival_city, 
+                        departure_city, 
+                        ac_type, 
+                        IF(
+                        next_leg_pointer IS NOT NULL, 
+                        CONCAT(
+                            inner_queryDatePlusOne.next_leg_pointer, 
                             (
                             SELECT 
-                                * 
-                            FROM 
-                                ultravi_ulav.flight_schedule_rules 
-                            WHERE 
-                                (
                                 ${fromUtcPlusOne} + (
-                                    HOUR(scheduled_departure_time) * 3600
+                                HOUR(t.scheduled_departure_time) * 3600
                                 ) + (
-                                    MINUTE(scheduled_departure_time) * 60
-                                ) BETWEEN date_start 
-                                AND date_end
+                                MINUTE(t.scheduled_departure_time) * 60
                                 ) 
-                                AND ${dayOfWeekPlusOne} = true
-                            ) as inner_queryDatePlusOne
-                        ) as queryDateInsidePlusOne
-                    )
-                ) as resultQuery
-            ) as bufferStructureQuery
+                            FROM 
+                                ultravi_ulav.flight_schedule_rules t 
+                            WHERE 
+                                t.id = inner_queryDatePlusOne.next_leg_pointer
+                            )
+                        ), 
+                        NULL
+                        ) AS next_leg_pointer 
+                    FROM 
+                        (
+                        SELECT 
+                            * 
+                        FROM 
+                            ultravi_ulav.flight_schedule_rules 
+                        WHERE 
+                            (
+                            ${fromUtcPlusOne} + (
+                                HOUR(scheduled_departure_time) * 3600
+                            ) + (
+                                MINUTE(scheduled_departure_time) * 60
+                            ) BETWEEN date_start 
+                            AND date_end
+                            ) 
+                            AND ${dayOfWeekPlusOne} = true
+                        ) as inner_queryDatePlusOne
+                    ) as queryDateInsidePlusOne
+                )
+            ) as resultQuery
         WHERE 
             (
             arrival_city = '${POVCity}' 
@@ -455,7 +450,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                 scheduled_departure_time BETWEEN ${req.body.from} 
                 AND ${req.body.until}
             )
-            );
+        );
         `
 
         //let query = `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE (arrival_city = '${POVCity}'  AND (${req.body.from} + (HOUR(scheduled_arrival_time)* 3600) + (MINUTE(scheduled_arrival_time) * 60) + (${offsetMinutes} * 60) BETWEEN date_start AND date_end) AND ${dayOfWeek} = true) OR (departure_city = '${POVCity}'  AND (${req.body.from} + (HOUR(scheduled_departure_time)* 3600) + (MINUTE(scheduled_departure_time) * 60) + (${offsetMinutes} * 60) BETWEEN date_start AND date_end) AND ${dayOfWeek} = true);`

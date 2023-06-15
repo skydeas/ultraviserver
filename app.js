@@ -249,7 +249,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
               subquery.next_leg_pointer,
               subquery.ac_type
           FROM (
-              SELECT id, CONCAT(id, ((${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60) + (std_offset * 86400)))) as generated_id,  ${date_object_14_days_from_now} as date, airline, client, remarks, flight_number, (${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60) + (std_offset * 86400)) as scheduled_departure_time, (${date_object_14_days_from_now} + (HOUR(scheduled_arrival_time) * 3600) + (MINUTE(scheduled_arrival_time) * 60)  + (sta_offset * 86400)) as scheduled_arrival_time, arrival_city, departure_city, ac_type,   IF(
+              SELECT id, CONCAT(id, ((${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60)))) as generated_id,  ${date_object_14_days_from_now} as date, airline, client, remarks, flight_number, (${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60)) as scheduled_departure_time, (${date_object_14_days_from_now} + (HOUR(scheduled_arrival_time) * 3600) + (MINUTE(scheduled_arrival_time) * 60)  + (sta_offset * 86400)) as scheduled_arrival_time, arrival_city, departure_city, ac_type,   IF(
                   next_leg_pointer IS NOT NULL,
                   CONCAT( inner_subquery.next_leg_pointer,
                             (
