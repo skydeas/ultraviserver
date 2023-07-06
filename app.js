@@ -228,48 +228,101 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     console.log('day of the week: ', dayOfWeek);
     console.log('date: ',date);
     
+    // DATEDIFF(FROM_UNIXTIME(${date_object_14_days_from_now}), FROM_UNIXTIME(queryDateInside.date_start)) AS nth_flight_number
+    // queryDateInside.date_start,
+    
     let generateAndInsertLegsQuery = 
-        `INSERT INTO ultravi_ulav.flight_schedule_buffer(
-            generated_id, date, airline, client, 
-            remarks, flight_number, scheduled_arrival_time, 
-            scheduled_departure_time, arrival_city, 
-            departure_city, next_leg_pointer, 
-            ac_type
-          ) SELECT 
-              subquery.generated_id, 
-              subquery.date, 
-              subquery.airline, 
-              subquery.client, 
-              subquery.remarks, 
-              subquery.flight_number, 
-              subquery.scheduled_arrival_time, 
-              subquery.scheduled_departure_time, 
-              subquery.arrival_city, 
-              subquery.departure_city, 
-              subquery.next_leg_pointer,
-              subquery.ac_type
-          FROM (
-              SELECT id, CONCAT(id, ((${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60)))) as generated_id,  ${date_object_14_days_from_now} as date, airline, client, remarks, flight_number, (${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60)) as scheduled_departure_time, (${date_object_14_days_from_now} + (HOUR(scheduled_arrival_time) * 3600) + (MINUTE(scheduled_arrival_time) * 60)  + (sta_offset * 86400)) as scheduled_arrival_time, arrival_city, departure_city, ac_type,   IF(
-                  next_leg_pointer IS NOT NULL,
-                  CONCAT( inner_subquery.next_leg_pointer,
-                            (
-                              SELECT ${date_object_14_days_from_now} + (HOUR(t.scheduled_departure_time) * 3600) + (MINUTE(t.scheduled_departure_time) * 60)
-                              FROM ultravi_ulav.flight_schedule_rules t
-                              WHERE t.id = inner_subquery.next_leg_pointer
-                            )
+        `
+        INSERT INTO ultravi_ulav.flight_schedule_buffer(
+        generated_id, date, airline, client, 
+        remarks, flight_number, scheduled_arrival_time, 
+        scheduled_departure_time, arrival_city, 
+        departure_city, next_leg_pointer, 
+        ac_type)
+            (
+            SELECT 
+                queryDateInside.generated_id, 
+                queryDateInside.date, 
+                queryDateInside.airline, 
+                queryDateInside.client, 
+                queryDateInside.remarks, 
+                queryDateInside.flight_number, 
+                queryDateInside.scheduled_arrival_time, 
+                queryDateInside.scheduled_departure_time, 
+                queryDateInside.arrival_city, 
+                queryDateInside.departure_city, 
+                queryDateInside.next_leg_pointer, 
+                queryDateInside.ac_type
+                
+            FROM 
+                (
+                SELECT 
+                    id, 
+                    date_start,
+                    CONCAT
+                        (
+                            id,
+                            '-', 
+                            (DATEDIFF(FROM_UNIXTIME(${date_object_14_days_from_now}), FROM_UNIXTIME(date_start)))
+                        ) as generated_id, 
+                    ${date_object_14_days_from_now} as date, 
+                    airline, 
+                    client, 
+                    remarks, 
+                    flight_number, 
+                    (
+                    ${date_object_14_days_from_now} + (
+                        HOUR(scheduled_departure_time) * 3600
+                    ) + (
+                        MINUTE(scheduled_departure_time) * 60
+                    )
+                    ) as scheduled_departure_time, 
+                    (
+                    ${date_object_14_days_from_now} + (
+                        HOUR(scheduled_arrival_time) * 3600
+                    ) + (
+                        MINUTE(scheduled_arrival_time) * 60
+                    ) + (sta_offset * 86400)
+                    ) as scheduled_arrival_time, 
+                    arrival_city, 
+                    departure_city, 
+                    ac_type, 
+                    IF(
+                    next_leg_pointer IS NOT NULL, 
+                    CONCAT(
+                        inner_queryDate.next_leg_pointer, 
+                        '-',
+                        (
+                        SELECT 
+                            (DATEDIFF(FROM_UNIXTIME(${date_object_14_days_from_now}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
+                        FROM 
+                            ultravi_ulav.flight_schedule_rules t 
+                        WHERE 
+                            t.id = inner_queryDate.next_leg_pointer
                         )
-                  ,
-                  NULL
-                ) AS next_leg_pointer
-              FROM (
-                SELECT *
-                FROM ultravi_ulav.flight_schedule_rules
-                WHERE (${date_object_14_days_from_now} + (HOUR(scheduled_departure_time) * 3600) + (MINUTE(scheduled_departure_time) * 60)
-                       BETWEEN date_start AND date_end)
-                  AND ${dayOfWeek} = true
-              ) as inner_subquery
-          ) AS subquery;  
-          `
+                    ), 
+                    NULL
+                    ) AS next_leg_pointer 
+                FROM 
+                    (
+                    SELECT 
+                        * 
+                    FROM 
+                        ultravi_ulav.flight_schedule_rules 
+                    WHERE 
+                        (
+                        ${date_object_14_days_from_now} + (
+                            HOUR(scheduled_departure_time) * 3600
+                        ) + (
+                            MINUTE(scheduled_departure_time) * 60
+                        ) BETWEEN date_start 
+                        AND date_end
+                        ) 
+                        AND ${dayOfWeek} = true
+                    ) as inner_queryDate
+                ) as queryDateInside 
+            )
+            `
 
                 // console.log('query: ', generateAndInsertLegsQuery);
 
@@ -282,6 +335,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
 
         console.log(response)
     });
+    
     
     
 

@@ -88,8 +88,52 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
  * @param until the timestamp that we will use as the upper bound of our query for dates. From < date we want < Until
  */
 router.post("/getFlightActivity", auth.authenticateRequest(22), async (req, res) => {
-    console.log('Request.body: ', JSON.stringify(req.body));
-    res.status(200).send({'message': 'activity'});
+    //console.log('Request.body: ', JSON.stringify(req.body));
+    //res.status(200).send({'message': 'activity'});
+    let bufferArray = [];
+    let activityArray = [];
+
+    // Get activity, then Get buffer, append, return to filter.
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        let query = `SELECT * FROM ultravi_ulav.flight_schedule_buffer WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
+        // console.log('Query: ', query);
+        connectionPool.query(query, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            //console.log(response);
+
+            bufferArray = response.map((obj) => {
+                return {...obj, origin: 'buffer'};
+            });
+
+            let queryActivity = `SELECT * FROM ultravi_ulav.flight_schedule_activity WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
+            // console.log('Query: ', query);
+            connectionPool.query(queryActivity, (err, response) => {
+                if (err) {
+                    console.log("Query Error: ", err);
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+    
+                // console.log(response);
+                activityArray = response.map((obj) => {
+                return {...obj, origin: 'activity'};
+            });
+
+                //console.log('async')
+                return res.status(200).send(activityArray.concat(bufferArray));
+            }); 
+        }); 
+    })
 });
 
 /**
@@ -111,15 +155,20 @@ router.post("/getFlightBuffer", auth.authenticateRequest(22), async (req, res) =
         let offsetMinutes = moment().utcOffset();
 
         let query = `SELECT * FROM ultravi_ulav.flight_schedule_buffer WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
-        console.log('Query: ', query);
+        //console.log('Query: ', query);
         connectionPool.query(query, (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
 
-            console.log(response);
-            return res.status(200).send(response);
+            // console.log(response);
+
+            let bufferArray = response.map((obj) => {
+                return {...obj, origin: 'buffer'};
+            });
+
+            return res.status(200).send(bufferArray);
         }); 
     })
 });
@@ -167,6 +216,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
             (
             SELECT 
                 queryDateInside.generated_id, 
+                queryDateInside.date_start,
                 queryDateInside.date, 
                 queryDateInside.airline, 
                 queryDateInside.client, 
@@ -177,23 +227,19 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                 queryDateInside.arrival_city, 
                 queryDateInside.departure_city, 
                 queryDateInside.next_leg_pointer, 
-                queryDateInside.ac_type 
+                queryDateInside.ac_type,
+                DATEDIFF(FROM_UNIXTIME(${fromUtc}), FROM_UNIXTIME(queryDateInside.date_start)) AS nth_flight_number
             FROM 
                 (
                 SELECT 
                     id, 
-                    CONCAT(
-                    id, 
-                    (
+                    date_start,
+                    CONCAT
                         (
-                        ${fromUtc} + (
-                            HOUR(scheduled_departure_time) * 3600
-                        ) + (
-                            MINUTE(scheduled_departure_time) * 60
-                        )
-                        )
-                    )
-                    ) as generated_id, 
+                            id,
+                            '-', 
+                            (DATEDIFF(FROM_UNIXTIME(${fromUtc}), FROM_UNIXTIME(date_start)))
+                        ) as generated_id, 
                     ${fromUtc} as date, 
                     airline, 
                     client, 
@@ -220,13 +266,10 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                     next_leg_pointer IS NOT NULL, 
                     CONCAT(
                         inner_queryDate.next_leg_pointer, 
+                        '-',
                         (
                         SELECT 
-                            ${fromUtc} + (
-                            HOUR(t.scheduled_departure_time) * 3600
-                            ) + (
-                            MINUTE(t.scheduled_departure_time) * 60
-                            ) 
+                            (DATEDIFF(FROM_UNIXTIME(${fromUtc}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
                         FROM 
                             ultravi_ulav.flight_schedule_rules t 
                         WHERE 
@@ -257,6 +300,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                 (
                 SELECT 
                     queryDateInsideMinusOne.generated_id, 
+                    queryDateInsideMinusOne.date_start,
                     queryDateInsideMinusOne.date, 
                     queryDateInsideMinusOne.airline, 
                     queryDateInsideMinusOne.client, 
@@ -267,22 +311,18 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                     queryDateInsideMinusOne.arrival_city, 
                     queryDateInsideMinusOne.departure_city, 
                     queryDateInsideMinusOne.next_leg_pointer, 
-                    queryDateInsideMinusOne.ac_type 
+                    queryDateInsideMinusOne.ac_type,
+                    DATEDIFF(FROM_UNIXTIME(${fromUtcMinusOne}), FROM_UNIXTIME(queryDateInsideMinusOne.date_start)) AS nth_flight_number
                 FROM 
                     (
                     SELECT 
                         id, 
-                        CONCAT(
-                        id, 
+                        date_start,
+                        CONCAT
                         (
-                            (
-                            ${fromUtcMinusOne} + (
-                                HOUR(scheduled_departure_time) * 3600
-                            ) + (
-                                MINUTE(scheduled_departure_time) * 60
-                            )
-                            )
-                        )
+                            id,
+                            '-', 
+                            (DATEDIFF(FROM_UNIXTIME(${fromUtcMinusOne}), FROM_UNIXTIME(date_start)))
                         ) as generated_id, 
                         ${fromUtcMinusOne} as date, 
                         airline, 
@@ -307,24 +347,21 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                         departure_city, 
                         ac_type, 
                         IF(
-                        next_leg_pointer IS NOT NULL, 
-                        CONCAT(
-                            inner_queryDateMinusOne.next_leg_pointer, 
-                            (
-                            SELECT 
-                                ${fromUtcMinusOne} + (
-                                HOUR(t.scheduled_departure_time) * 3600
-                                ) + (
-                                MINUTE(t.scheduled_departure_time) * 60
-                                ) 
-                            FROM 
-                                ultravi_ulav.flight_schedule_rules t 
-                            WHERE 
-                                t.id = inner_queryDateMinusOne.next_leg_pointer
-                            )
-                        ), 
-                        NULL
-                        ) AS next_leg_pointer 
+                            next_leg_pointer IS NOT NULL, 
+                            CONCAT(
+                                inner_queryDateMinusOne.next_leg_pointer, 
+                                '-',
+                                (
+                                SELECT 
+                                    (DATEDIFF(FROM_UNIXTIME(${fromUtcMinusOne}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDateMinusOne.date_start)))
+                                FROM 
+                                    ultravi_ulav.flight_schedule_rules t 
+                                WHERE 
+                                    t.id = inner_queryDateMinusOne.next_leg_pointer
+                                )
+                            ), 
+                            NULL
+                        ) AS next_leg_pointer
                     FROM 
                         (
                         SELECT 
@@ -348,6 +385,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                 (
                 SELECT 
                     queryDateInsidePlusOne.generated_id, 
+                    queryDateInsidePlusOne.date_start,
                     queryDateInsidePlusOne.date, 
                     queryDateInsidePlusOne.airline, 
                     queryDateInsidePlusOne.client, 
@@ -358,22 +396,18 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                     queryDateInsidePlusOne.arrival_city, 
                     queryDateInsidePlusOne.departure_city, 
                     queryDateInsidePlusOne.next_leg_pointer, 
-                    queryDateInsidePlusOne.ac_type 
+                    queryDateInsidePlusOne.ac_type,
+                    DATEDIFF(FROM_UNIXTIME(${fromUtcPlusOne}), FROM_UNIXTIME(queryDateInsidePlusOne.date_start)) AS nth_flight_number
                 FROM 
                     (
                     SELECT 
                         id, 
-                        CONCAT(
-                        id, 
+                        date_start,
+                        CONCAT
                         (
-                            (
-                            ${fromUtcPlusOne} + (
-                                HOUR(scheduled_departure_time) * 3600
-                            ) + (
-                                MINUTE(scheduled_departure_time) * 60
-                            )
-                            )
-                        )
+                            id,
+                            '-', 
+                            (DATEDIFF(FROM_UNIXTIME(${fromUtcPlusOne}), FROM_UNIXTIME(date_start)))
                         ) as generated_id, 
                         ${fromUtcPlusOne} as date, 
                         airline, 
@@ -398,24 +432,21 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                         departure_city, 
                         ac_type, 
                         IF(
-                        next_leg_pointer IS NOT NULL, 
-                        CONCAT(
-                            inner_queryDatePlusOne.next_leg_pointer, 
-                            (
-                            SELECT 
-                                ${fromUtcPlusOne} + (
-                                HOUR(t.scheduled_departure_time) * 3600
-                                ) + (
-                                MINUTE(t.scheduled_departure_time) * 60
-                                ) 
-                            FROM 
-                                ultravi_ulav.flight_schedule_rules t 
-                            WHERE 
-                                t.id = inner_queryDatePlusOne.next_leg_pointer
-                            )
-                        ), 
-                        NULL
-                        ) AS next_leg_pointer 
+                            next_leg_pointer IS NOT NULL, 
+                            CONCAT(
+                                inner_queryDatePlusOne.next_leg_pointer, 
+                                '-',
+                                (
+                                SELECT 
+                                    (DATEDIFF(FROM_UNIXTIME(${fromUtcPlusOne}), FROM_UNIXTIME(t.date_start))) + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDatePlusOne.date_start)))
+                                FROM 
+                                    ultravi_ulav.flight_schedule_rules t 
+                                WHERE 
+                                    t.id = inner_queryDatePlusOne.next_leg_pointer
+                                )
+                            ), 
+                            NULL
+                        ) AS next_leg_pointer
                     FROM 
                         (
                         SELECT 
@@ -461,11 +492,104 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
 
-            // console.log(response);
-            return res.status(200).send(response);
+             // console.log(response);
+
+            let rulesArray = response.map((obj) => {
+                return {...obj, origin: 'rules'};
+            });
+
+            return res.status(200).send(rulesArray);
         }); 
     });
 });
+
+/**
+ * Route that retrieves all of the legs on a given date from flightBuffer table
+ * auth request 22 is view flight activity.
+ * @param from the timestamp that we will use as the lower bound of our query for dates. From < date we want < Until
+ * @param until the timestamp that we will use as the upper bound of our query for dates. From < date we want < Until
+ */
+router.get("/getFlightDelays/:id", auth.authenticateRequest(22), async (req, res) => {
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+
+    console.log(req.params.id);
+
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        let query = `SELECT * FROM ultravi_ulav.flight_schedule_delays WHERE leg_id = ${req.params.id};`
+        //console.log('Query: ', query);
+        connectionPool.query(query, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // console.log(response);
+
+            return res.status(200).send(response);
+        }); 
+    })
+});
+
+/**
+ * Route that retrieves all of delay codes
+ */
+router.get("/getDelayCodes", auth.authenticateRequest(22), async (req, res) => {
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        let query = `SELECT * FROM ultravi_ulav.delay_codes`
+        //console.log('Query: ', query);
+        connectionPool.query(query, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // console.log(response);
+
+            return res.status(200).send(response);
+        }); 
+    })
+});
+
+/**
+ * Route that retrieves all of delay codes
+ */
+router.post("/saveFlightDelays", auth.authenticateRequest(22), async (req, res) => {
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        // console.log('Queries: ', req.body.queryArray);
+        for(let i = 0; i < req.body.queryArray.length;i++){
+            connectionPool.query(req.body.queryArray[i], (err, response) => {
+                if (err) {
+                    console.log("Query Error: ", err);
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+                // console.log(response);
+            }); 
+        }
+        res.status(200).send({'test':'a'});
+    })
+});
+
+
 
 function getUtcOffsetInHours() {
     let utcOffset = (Math.abs(moment().utcOffset()) / 60);
