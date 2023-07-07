@@ -54,6 +54,13 @@ module.exports = {
         addAirlineQuery : 'INSERT INTO ' + databaseName + '.airlines (name, code) VALUES (?,?);',
         updateAirlineQuery : 'UPDATE ' + databaseName + '.airlines SET name=?,code=? WHERE id=?',
         deleteAirlineQuery : 'DELETE FROM ' + databaseName + '.airlines WHERE id=?',
+        // ====== Aircrafts Table ======
+        selectAllAircraftsQuery : 'SELECT * FROM ' + databaseName + '.aircrafts',
+        addAircraftQuery : 'INSERT INTO ' + databaseName + '.aircrafts (ac_type, ac_reg, airline) VALUES (?,?,?);',
+        updateAircraftQuery : 'UPDATE ' + databaseName + '.aircrafts SET ac_type=?,ac_reg=?,airline=? WHERE id=?',
+        deleteAircraftQuery : 'DELETE FROM ' + databaseName + '.aircrafts WHERE id=?',
+        // ac type
+        selectAllAc_typesQuery: 'SELECT * FROM ' + databaseName + '.ac_type',
         // ====== Password Resert Tokens Table ======
         selectAllPasswordResetTokensQuery : 'SELECT * FROM ' + databaseName + '.account_recovery_tokens',
         addPasswordResetTokenQuery : 'INSERT INTO ' + databaseName + '.account_recovery_tokens (expiration, user_email) VALUES (?,?);',
