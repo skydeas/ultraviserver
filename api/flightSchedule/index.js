@@ -50,7 +50,7 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
             boolToNumber(req.body.formRecurring),
             req.body.formDate_start,
             req.body.formDate_end,
-            req.body.formAirline,
+            parseInt(req.body.formAirline, 10),
             req.body.formClient,
             req.body.formRemarks,
             req.body.formFlight_number,
@@ -66,7 +66,7 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
             boolToNumber(req.body.formFriday),
             boolToNumber(req.body.formSaturday),
             boolToNumber(req.body.formSunday),
-            req.body.form_ac_type,
+            parseInt(req.body.form_ac_type, 10),
             req.body.form_sta_offset,
             // req.body.form_std_offset, DEPRECATED
         ], (err, response) => {
@@ -585,7 +585,49 @@ router.post("/saveFlightDelays", auth.authenticateRequest(22), async (req, res) 
                 // console.log(response);
             }); 
         }
-        res.status(200).send({'test':'a'});
+        res.status(200).send({message: 'success'});
+    })
+});
+
+/**
+ * Route that updates a specifci leg from either flight activity or buffer
+ * TASK NOT DEFINED. PLEASE CONSULT AND FIX
+ */
+router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth.authenticateRequest(22)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        let startOfDayArrival = moment.unix(req.body.stashed_STA).utc().startOf('day');
+        let startOfDayDeparture = moment.unix(req.body.stashed_STD).utc().startOf('day');
+        console.log(startOfDayArrival);
+        console.log(startOfDayDeparture);
+
+
+        let databaseName = '';
+        console.log(req.body);
+        if(req.body.origin == 'activity'){
+            databaseName = 'ultravi_ulav.flight_schedule_activity';
+        } else if(req.body.origin == 'buffer'){
+            databaseName = 'ultravi_ulav.flight_schedule_buffer';
+        }
+
+        connectionPool.query(`UPDATE ${databaseName} SET ac_type=${parseInt(req.body.ac_type, 10)}, actual_arrival_time=${startOfDayArrival.unix() + moment.duration(req.body.actual_arrival_time).asSeconds()},actual_departure_time=${startOfDayDeparture.unix() + moment.duration(req.body.actual_departure_time).asSeconds()}, ac_reg='${req.body.ac_reg}', airline=${parseInt(req.body.airline, 10)}, arrival_city='${req.body.arrival_city}', client='${req.body.client}', date=${req.body.date}, departure_city='${req.body.departure_city}', estimated_arrival_time=${startOfDayArrival.unix() + moment.duration(req.body.estimated_arrival_time).asSeconds()}, estimated_departure_time=${startOfDayDeparture.unix() + moment.duration(req.body.estimated_departure_time).asSeconds()}, flight_number=${req.body.flight_number}, gate='${req.body.gate}', next_leg_pointer=${req.body.next_leg_pointer !== null ? `'${req.body.next_leg_pointer}'` : null}, pax=${req.body.pax}, remarks='${req.body.remarks}', scheduled_arrival_time=${req.body.stashed_STA}, scheduled_departure_time=${req.body.stashed_STD}, wheelchair_count=${req.body.wheelchair_count} WHERE id=${req.body.id}`, 
+        (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // console.log(response);
+
+            return res.status(200).send(response);
+        }); 
+       //return res.status(200).send(req.body);
     })
 });
 
