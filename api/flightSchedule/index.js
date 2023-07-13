@@ -616,7 +616,28 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
             databaseName = 'ultravi_ulav.flight_schedule_buffer';
         }
 
-        connectionPool.query(`UPDATE ${databaseName} SET ac_type=${parseInt(req.body.ac_type, 10)}, actual_arrival_time=${startOfDayArrival.unix() + moment.duration(req.body.actual_arrival_time).asSeconds()},actual_departure_time=${startOfDayDeparture.unix() + moment.duration(req.body.actual_departure_time).asSeconds()}, ac_reg='${req.body.ac_reg}', airline=${parseInt(req.body.airline, 10)}, arrival_city='${req.body.arrival_city}', client='${req.body.client}', date=${req.body.date}, departure_city='${req.body.departure_city}', estimated_arrival_time=${startOfDayArrival.unix() + moment.duration(req.body.estimated_arrival_time).asSeconds()}, estimated_departure_time=${startOfDayDeparture.unix() + moment.duration(req.body.estimated_departure_time).asSeconds()}, flight_number=${req.body.flight_number}, gate='${req.body.gate}', next_leg_pointer=${req.body.next_leg_pointer !== null ? `'${req.body.next_leg_pointer}'` : null}, pax=${req.body.pax}, remarks='${req.body.remarks}', scheduled_arrival_time=${req.body.stashed_STA}, scheduled_departure_time=${req.body.stashed_STD}, wheelchair_count=${req.body.wheelchair_count} WHERE id=${req.body.id}`, 
+        connectionPool.query(
+            `UPDATE ${databaseName} SET 
+                ac_type=${parseInt(req.body.ac_type, 10)}, 
+                actual_arrival_time=${req.body.actual_arrival_time === '' ? 'NULL' : startOfDayArrival.unix() + moment.duration(req.body.actual_arrival_time).asSeconds()},
+                actual_departure_time=${req.body.actual_departure_time === '' ? 'NULL' : startOfDayDeparture.unix() + moment.duration(req.body.actual_departure_time).asSeconds()}, 
+                ac_reg='${req.body.ac_reg}', 
+                airline=${parseInt(req.body.airline, 10)}, 
+                arrival_city='${req.body.arrival_city}', 
+                client='${req.body.client}', 
+                date=${req.body.date}, 
+                departure_city='${req.body.departure_city}', 
+                estimated_arrival_time=${req.body.estimated_arrival_time === '' ? 'NULL' : startOfDayArrival.unix() + moment.duration(req.body.estimated_arrival_time).asSeconds()}, 
+                estimated_departure_time=${req.body.estimated_departure_time === '' ? 'NULL' :startOfDayDeparture.unix() + moment.duration(req.body.estimated_departure_time).asSeconds()}, 
+                flight_number=${req.body.flight_number}, 
+                gate='${req.body.gate}', 
+                next_leg_pointer=${req.body.next_leg_pointer !== 'null' ? `'${req.body.next_leg_pointer}'` : 'NULL'}, 
+                pax=${req.body.pax}, 
+                remarks='${req.body.remarks}', 
+                scheduled_arrival_time=${req.body.stashed_STA}, 
+                scheduled_departure_time=${req.body.stashed_STD}, 
+                wheelchair_count=${req.body.wheelchair_count} 
+            WHERE id=${req.body.id}`, 
         (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
