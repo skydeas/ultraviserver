@@ -69,17 +69,179 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
             parseInt(req.body.form_ac_type, 10),
             req.body.form_sta_offset,
             // req.body.form_std_offset, DEPRECATED
-        ], (err, response) => {
+        ], async (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
-                responseSent = true;
+                // responseSent = true;
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
+
+
+            // Add flights to buffer (if necessary.)
+            await fillBufferOnRuleCreation(req.body, response.insertId);
+
             // console.log(response);
             return res.status(200).send(response);
         });  
     })
 });
+
+/**
+ * Function that creates the legs in the buffer that fit within the contract being created.
+ *  Buffer is 14 days from now, today is 0 days from now.
+ *  If we need to create Today, + a full buffer, that is a total of 15 days worth of legs.
+ */
+async function fillBufferOnRuleCreation(ruleForm, insertId){
+    const secondsPerDay = 86400;
+    let today = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
+    let startOfRule = ruleForm.formDate_start;
+    let endOfRule = ruleForm.formDate_end;
+    let firstDayOfBuffer = moment.utc().startOf('day').unix() + (1 * secondsPerDay) //Date is start of day in UTC (00:00:00)
+    let lastDayOfBuffer = moment.utc().startOf('day').unix() + (14 * secondsPerDay) //Date is start of day in UTC (00:00:00)
+
+    
+    console.log('today ', today)
+    console.log('startOfRule ', startOfRule)
+    console.log('endOfRule ', endOfRule)
+    console.log('firstDayOfBuffer ', firstDayOfBuffer)
+    console.log('lastDayOfBuffer ', lastDayOfBuffer)
+
+
+    // This for loop is for today, and the length of the  buffer!
+    for(let i = 0; i < 15; i++){
+        let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
+        let databaseName = '';
+        const localTimezoneOffset = Math.abs((moment().utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
+        const dayOfWeek = moment((dayOfForLoop + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
+
+        console.log('today: ', today);
+        console.log('dayOfForLoop: ', dayOfForLoop);
+        console.log('dayOfWeek: ', dayOfWeek);
+
+        if(dayOfForLoop == today){
+            console.log('activity')
+            databaseName = 'ultravi_ulav.flight_schedule_activity';
+        } else if(dayOfForLoop >= startOfRule && dayOfForLoop <= lastDayOfBuffer ){
+            console.log('buffer')
+            databaseName = 'ultravi_ulav.flight_schedule_buffer';
+        } else {
+            console.log('NOT in the buffer or activity')
+            return;
+        }
+
+        let generateAndInsertLegsQuery = 
+            `
+            INSERT INTO ${databaseName}(
+            generated_id, date, airline, client, 
+            remarks, flight_number, scheduled_arrival_time, 
+            scheduled_departure_time, arrival_city, 
+            departure_city, next_leg_pointer, 
+            ac_type)
+                (
+                SELECT 
+                    queryDateInside.generated_id, 
+                    queryDateInside.date, 
+                    queryDateInside.airline, 
+                    queryDateInside.client, 
+                    queryDateInside.remarks, 
+                    queryDateInside.flight_number, 
+                    queryDateInside.scheduled_arrival_time, 
+                    queryDateInside.scheduled_departure_time, 
+                    queryDateInside.arrival_city, 
+                    queryDateInside.departure_city, 
+                    queryDateInside.next_leg_pointer, 
+                    queryDateInside.ac_type
+                    
+                FROM 
+                    (
+                    SELECT 
+                        id, 
+                        date_start,
+                        CONCAT
+                            (
+                                id,
+                                '-', 
+                                (DATEDIFF(FROM_UNIXTIME(${dayOfForLoop}), FROM_UNIXTIME(date_start)))
+                            ) as generated_id, 
+                        ${dayOfForLoop} as date, 
+                        airline, 
+                        client, 
+                        remarks, 
+                        flight_number, 
+                        (
+                        ${dayOfForLoop} + (
+                            HOUR(scheduled_departure_time) * 3600
+                        ) + (
+                            MINUTE(scheduled_departure_time) * 60
+                        )
+                        ) as scheduled_departure_time, 
+                        (
+                        ${dayOfForLoop} + (
+                            HOUR(scheduled_arrival_time) * 3600
+                        ) + (
+                            MINUTE(scheduled_arrival_time) * 60
+                        ) + (sta_offset * 86400)
+                        ) as scheduled_arrival_time, 
+                        arrival_city, 
+                        departure_city, 
+                        ac_type, 
+                        IF(
+                        next_leg_pointer IS NOT NULL, 
+                        CONCAT(
+                            inner_queryDate.next_leg_pointer, 
+                            '-',
+                            (
+                            SELECT 
+                                (DATEDIFF(FROM_UNIXTIME(${dayOfForLoop}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
+                            FROM 
+                                ultravi_ulav.flight_schedule_rules t 
+                            WHERE 
+                                t.id = inner_queryDate.next_leg_pointer
+                            )
+                        ), 
+                        NULL
+                        ) AS next_leg_pointer 
+                    FROM 
+                        (
+                        SELECT 
+                            * 
+                        FROM 
+                            ultravi_ulav.flight_schedule_rules 
+                        WHERE 
+                            (
+                            ${dayOfForLoop} + (
+                                HOUR(scheduled_departure_time) * 3600
+                            ) + (
+                                MINUTE(scheduled_departure_time) * 60
+                            ) BETWEEN date_start 
+                            AND date_end
+                            ) 
+                            AND ${dayOfWeek} = true
+                            AND id = ${insertId}
+                        ) as inner_queryDate
+                    ) as queryDateInside 
+                )
+                `
+            // console.log('query: ', generateAndInsertLegsQuery);
+            // Insert new rules onto buffer in a single query.
+            connectionPool.query(generateAndInsertLegsQuery, (err, response) => {
+                if (err) {
+                    console.log("Query Error: ", err);
+                    throw err
+                }
+        
+                console.log(response)
+            });
+    }
+    //return res.status(200).send({'message': 'Added Rules to Buffer!'});
+}
+
+function calculateSeconds(timeString){
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const seconds = (hours * 3600) + (minutes * 60);
+    return seconds;
+}
+
 
 /**
  * Route that retrieves all of the legs on a given date from flightActivity table
@@ -652,6 +814,8 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
        //return res.status(200).send(req.body);
     })
 });
+
+
 
 
 

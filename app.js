@@ -214,7 +214,7 @@ app.post('/auth/getTasksById', async function (req, res) {
  * This is the job scheduler package we are using to trigger server calls at 2 am every day
  * For example, moving the 'day' over to the next day.
  */
-cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month (1-12), day of week (0,7 -> both 0 and 7 represent sunday) 
+cron.schedule('33 8 * * *', () => {  // Minute, hour, day of month (1-31), month (1-12), day of week (0,7 -> both 0 and 7 represent sunday) 
     // console.log('Running script at 2 am');
 
     /**   We should do a couple of things
