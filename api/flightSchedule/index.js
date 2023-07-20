@@ -798,8 +798,9 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
                 remarks='${req.body.remarks}', 
                 scheduled_arrival_time=${req.body.stashed_STA}, 
                 scheduled_departure_time=${req.body.stashed_STD}, 
-                wheelchair_count=${req.body.wheelchair_count},
-                isSubservice=${req.body.isSubservice}
+                wheelchair_count=${req.body.wheelchair_count !== 'null' && req.body.wheelchair_count !== '' ? `'${req.body.wheelchair_count}'` : 'NULL'},
+                isSubservice=${req.body.isSubservice},
+                flightStatus=${req.body.flightStatus}
             WHERE id=${req.body.id}`, 
         (err, response) => {
             if (err) {
