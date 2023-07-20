@@ -344,8 +344,8 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     // Move TODAY to flight Activity:
     let copyFromBufferToActivityQuery = 
         `INSERT INTO ultravi_ulav.flight_schedule_activity 
-        (date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time, actual_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type, ac_reg, pax, wheelchair_count, isSubservice)
-        SELECT date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time,  actual_departure_time, arrival_city,departure_city,next_leg_pointer, ac_type, ac_reg, pax, wheelchair_count, isSubservice
+        (date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time, actual_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type, ac_reg, pax, wheelchair_count, isSubservice, flightStatus)
+        SELECT date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time,  actual_departure_time, arrival_city,departure_city,next_leg_pointer, ac_type, ac_reg, pax, wheelchair_count, isSubservice, flightStatus
         FROM ultravi_ulav.flight_schedule_buffer
         WHERE date = ${date}`;
 
