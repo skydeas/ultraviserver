@@ -816,6 +816,80 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
     })
 });
 
+/**
+ * Route that creates a leg on the flight activity 
+ * TASK NOT DEFINED. PLEASE CONSULT AND FIX
+ */
+router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth.authenticateRequest(22)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        
+        let startOfDayArrival = moment.unix(req.body.date).utc().startOf('day');
+        let startOfDayDeparture = moment.unix(req.body.date).utc().startOf('day');
+        console.log(startOfDayArrival);
+        console.log(startOfDayDeparture);
+        
+
+        let databaseName = '';
+        console.log(req.body);
+        if(req.body.origin == 'activity'){
+            databaseName = 'ultravi_ulav.flight_schedule_activity';
+        } else if(req.body.origin == 'buffer'){
+            databaseName = 'ultravi_ulav.flight_schedule_buffer';
+        }
+
+        let query = 
+        `
+            INSERT INTO ${databaseName}
+                (ac_type, actual_arrival_time, actual_departure_time, ac_reg, airline, arrival_city, client, date, departure_city, estimated_arrival_time, estimated_departure_time, flight_number, gate, next_leg_pointer, pax, remarks, scheduled_arrival_time, scheduled_departure_time, wheelchair_count, isSubservice, flightStatus)
+            VALUES
+            (
+                ${parseInt(req.body.ac_type, 10)}, 
+                ${req.body.actual_arrival_time === '' ? 'NULL' : startOfDayArrival.unix() + moment.duration(req.body.actual_arrival_time).asSeconds()},
+                ${req.body.actual_departure_time === '' ? 'NULL' : startOfDayDeparture.unix() + moment.duration(req.body.actual_departure_time).asSeconds()}, 
+                ${req.body.ac_reg !== 'null' && req.body.ac_reg !== '' ? `'${req.body.ac_reg}'` : 'NULL'},
+                ${parseInt(req.body.airline, 10)}, 
+                '${req.body.arrival_city}', 
+                '${req.body.client}', 
+                ${req.body.date}, 
+                '${req.body.departure_city}', 
+                ${req.body.estimated_arrival_time === '' ? 'NULL' : startOfDayArrival.unix() + moment.duration(req.body.estimated_arrival_time).asSeconds()}, 
+                ${req.body.estimated_departure_time === '' ? 'NULL' :startOfDayDeparture.unix() + moment.duration(req.body.estimated_departure_time).asSeconds()}, 
+                ${req.body.flight_number}, 
+                ${req.body.gate !== 'null' ? `'${req.body.gate}'` : 'NULL'}, 
+                ${req.body.next_leg_pointer !== 'null' ? `'${req.body.next_leg_pointer}'` : 'NULL'}, 
+                ${req.body.pax !== 'null' && req.body.pax !== '' ? `'${req.body.pax}'` : 'NULL'},
+                '${req.body.remarks}', 
+                ${req.body.scheduled_arrival_time === '' ? 'NULL' : startOfDayArrival.unix() + moment.duration(req.body.scheduled_arrival_time).asSeconds()}, 
+                ${req.body.scheduled_departure_time === '' ? 'NULL' : startOfDayArrival.unix() + moment.duration(req.body.scheduled_departure_time).asSeconds()},
+                ${req.body.wheelchair_count !== 'null' && req.body.wheelchair_count !== '' ? `'${req.body.wheelchair_count}'` : 'NULL'},
+                ${req.body.isSubservice},
+                ${req.body.flightStatus}
+        );`
+
+        console.log(query);
+                
+        connectionPool.query(
+            query, 
+        (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            console.log(response);
+
+            return res.status(200).send(response);
+        }); 
+       //return res.status(200).send(req.body);
+    })
+});
 
 
 
