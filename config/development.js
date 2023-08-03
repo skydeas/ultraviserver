@@ -49,12 +49,31 @@ module.exports = {
         addAirportQuery : 'INSERT INTO ' + databaseName + '.airports (IATA, ICAO, AirportName, City, Country, Latitude, Longitude, Altitude, TZ) VALUES (?,?,?,?,?,?,?,?,?);',
         updateAirportQuery : 'UPDATE ' + databaseName + '.airports SET IATA=?,ICAO=?,AirportName=?,City=?,Country=?,Latitude=?,Longitude=?,Altitude=?,TZ=? WHERE id=?',
         deleteAirportQuery : 'DELETE FROM ' + databaseName + '.airports WHERE id=?',
+        // ====== Airlines Table ======
+        selectAllAirlinesQuery : 'SELECT * FROM ' + databaseName + '.airlines',
+        addAirlineQuery : 'INSERT INTO ' + databaseName + '.airlines (name, code) VALUES (?,?);',
+        updateAirlineQuery : 'UPDATE ' + databaseName + '.airlines SET name=?,code=? WHERE id=?',
+        deleteAirlineQuery : 'DELETE FROM ' + databaseName + '.airlines WHERE id=?',
+        // ====== Aircrafts Table ======
+        selectAllAircraftsQuery : 'SELECT * FROM ' + databaseName + '.aircrafts',
+        addAircraftQuery : 'INSERT INTO ' + databaseName + '.aircrafts (ac_type, ac_reg, airline) VALUES (?,?,?);',
+        updateAircraftQuery : 'UPDATE ' + databaseName + '.aircrafts SET ac_type=?,ac_reg=?,airline=? WHERE id=?',
+        deleteAircraftQuery : 'DELETE FROM ' + databaseName + '.aircrafts WHERE id=?',
+        // ac type
+        selectAllAc_typesQuery: 'SELECT * FROM ' + databaseName + '.ac_type',
         // ====== Password Resert Tokens Table ======
         selectAllPasswordResetTokensQuery : 'SELECT * FROM ' + databaseName + '.account_recovery_tokens',
         addPasswordResetTokenQuery : 'INSERT INTO ' + databaseName + '.account_recovery_tokens (expiration, user_email) VALUES (?,?);',
         deletePasswordResetTokenQuery : 'DELETE FROM ' + databaseName + '.account_recovery_tokens WHERE id=?',
         deletePasswordResetTokenByEmailQuery : 'DELETE FROM ' + databaseName + '.account_recovery_tokens WHERE email=?',
+        // ====== Flight Schedule Rules Table ======
+        selectAllFlightScheduleRulesQuery : 'SELECT * FROM ' + databaseName + '.flight_schedule_rules',
+        createFlightScheduleRuleQuery: 'INSERT INTO ' + databaseName + '.flight_schedule_rules (recurring, date_start, date_end, airline, client, remarks, flight_number, flight_number_out, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city, monday, tuesday, wednesday, thursday, friday, saturday, sunday, ac_type, sta_offset) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);',
+        // ====== Flight Activity / Buffer Rules Table ======
+        updateFlightActivityLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_activity SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
+        updateFlightBufferLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_buffer SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
 
+        // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
 
     },
     tokenMaxAge: ('2h'), // 2 hours

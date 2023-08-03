@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const config = require('./config/development');
-
+const moment = require('moment');
+const cron = require('node-cron');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
 
@@ -68,9 +69,15 @@ app.use('/api/documents', require('./api/documents'));
 
 app.use('/api/airport', require('./api/airports'));
 
+app.use('/api/airline', require('./api/airlines'));
+
+app.use('/api/aircraft', require('./api/aircrafts'));
+
 app.use('/api/mailer', require('./api/mailer'));
 
 app.use('/api/token', require('./api/token'));
+
+app.use('/api/flightSchedule', require('./api/flightSchedule'));
 
 //#region ============================ Authentication Region ===============================
 
@@ -98,7 +105,7 @@ app.post('/auth/isTokenValid', async function (req, res) {
 
 // POST /login gets urlencoded bodies
 app.post('/auth/local', function (req, res) {
-    console.log('someone logging in!');
+    // console.log('someone logging in!');
     var currentUser;
     // Query database for user.
 
@@ -125,6 +132,7 @@ app.post('/auth/local', function (req, res) {
                 res.sendStatus(403); // Incorrect Response, Handle this better
                 // res.end();
             } else {
+                console.log(`Username ${currentUser[0].username} just logged in at: ${ moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss')}`);
                 // Since passwords match, generate and return JWT with username, expiration timestamp of 2 hours, and task
                 const jwtBearerToken = jwt.sign({
                     _username: currentUser[0].username,
@@ -199,6 +207,184 @@ app.post('/auth/getTasksById', async function (req, res) {
     });
 })
 //#endregion
+
+
+
+/**
+ * This is the job scheduler package we are using to trigger server calls at 2 am every day
+ * For example, moving the 'day' over to the next day.
+ */
+cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month (1-12), day of week (0,7 -> both 0 and 7 represent sunday) 
+    // console.log('Running script at 2 am');
+
+    /**   We should do a couple of things
+     *    Flight buffer filling: We have to grab the item from 14 days away and insert it into the buffer
+     *    Once we have inserted those days 
+    */
+    const secondsPerDay = 86400;
+    const date = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
+    let date_object_14_days_from_now = date + (14 * secondsPerDay); // Today + 14
+    const localTimezoneOffset = Math.abs((moment().utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
+    const dayOfWeek = moment((date_object_14_days_from_now + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
+    
+    console.log('day of the week: ', dayOfWeek);
+    console.log('date: ',date);
+    
+    // DATEDIFF(FROM_UNIXTIME(${date_object_14_days_from_now}), FROM_UNIXTIME(queryDateInside.date_start)) AS nth_flight_number
+    // queryDateInside.date_start,
+    
+    let generateAndInsertLegsQuery = 
+        `
+        INSERT INTO ultravi_ulav.flight_schedule_buffer(
+        generated_id, date, airline, client, 
+        remarks, flight_number, scheduled_arrival_time, 
+        scheduled_departure_time, arrival_city, 
+        departure_city, next_leg_pointer, 
+        ac_type, flightStatus)
+            (
+            SELECT 
+                queryDateInside.generated_id, 
+                queryDateInside.date, 
+                queryDateInside.airline, 
+                queryDateInside.client, 
+                queryDateInside.remarks, 
+                queryDateInside.flight_number, 
+                queryDateInside.scheduled_arrival_time, 
+                queryDateInside.scheduled_departure_time, 
+                queryDateInside.arrival_city, 
+                queryDateInside.departure_city, 
+                queryDateInside.next_leg_pointer, 
+                queryDateInside.ac_type,
+                1
+            FROM 
+                (
+                SELECT 
+                    id, 
+                    date_start,
+                    CONCAT
+                        (
+                            id,
+                            '-', 
+                            (DATEDIFF(FROM_UNIXTIME(${date_object_14_days_from_now}), FROM_UNIXTIME(date_start)))
+                        ) as generated_id, 
+                    ${date_object_14_days_from_now} as date, 
+                    airline, 
+                    client, 
+                    remarks, 
+                    flight_number, 
+                    (
+                    ${date_object_14_days_from_now} + (
+                        HOUR(scheduled_departure_time) * 3600
+                    ) + (
+                        MINUTE(scheduled_departure_time) * 60
+                    )
+                    ) as scheduled_departure_time, 
+                    (
+                    ${date_object_14_days_from_now} + (
+                        HOUR(scheduled_arrival_time) * 3600
+                    ) + (
+                        MINUTE(scheduled_arrival_time) * 60
+                    ) + (sta_offset * 86400)
+                    ) as scheduled_arrival_time, 
+                    arrival_city, 
+                    departure_city, 
+                    ac_type, 
+                    IF(
+                    next_leg_pointer IS NOT NULL, 
+                    CONCAT(
+                        inner_queryDate.next_leg_pointer, 
+                        '-',
+                        (
+                        SELECT 
+                            (DATEDIFF(FROM_UNIXTIME(${date_object_14_days_from_now}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
+                        FROM 
+                            ultravi_ulav.flight_schedule_rules t 
+                        WHERE 
+                            t.id = inner_queryDate.next_leg_pointer
+                        )
+                    ), 
+                    NULL
+                    ) AS next_leg_pointer 
+                FROM 
+                    (
+                    SELECT 
+                        * 
+                    FROM 
+                        ultravi_ulav.flight_schedule_rules 
+                    WHERE 
+                        (
+                        ${date_object_14_days_from_now} + (
+                            HOUR(scheduled_departure_time) * 3600
+                        ) + (
+                            MINUTE(scheduled_departure_time) * 60
+                        ) BETWEEN date_start 
+                        AND date_end
+                        ) 
+                        AND ${dayOfWeek} = true
+                    ) as inner_queryDate
+                ) as queryDateInside 
+            )
+            `
+
+                // console.log('query: ', generateAndInsertLegsQuery);
+
+    // Insert new rules onto buffer in a single query.
+    connectionPool.query(generateAndInsertLegsQuery, (err, response) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            throw err
+        }
+
+        console.log(response)
+    });
+    
+    
+    
+
+    // Move TODAY to flight Activity:
+    let copyFromBufferToActivityQuery = 
+        `INSERT INTO ultravi_ulav.flight_schedule_activity 
+        (date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time, actual_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type, ac_reg, pax, wheelchair_count, isSubservice, flightStatus)
+        SELECT date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time,  actual_departure_time, arrival_city,departure_city,next_leg_pointer, ac_type, ac_reg, pax, wheelchair_count, isSubservice, flightStatus
+        FROM ultravi_ulav.flight_schedule_buffer
+        WHERE date = ${date}`;
+
+    connectionPool.query(copyFromBufferToActivityQuery, (err, response) => {
+        if (err) {
+            console.log("Query Error: ", err);
+            throw err
+        }
+
+        // Data base been copied, delete the rest?
+        connectionPool.query(`DELETE FROM ultravi_ulav.flight_schedule_buffer WHERE date = ${date}`, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                throw err
+            }
+            // Data base been copied, delete the rest?
+            
+        });
+    });
+    
+});
+
+/**
+ * Generated Leg ID is now of the format: {rule.id} + '' + {generatedTimestamp}
+ * the generated timestamp is the STD of the leg in UTC.
+ * If a flight leaves at 07:00 UTC, we add (7 * 3600) to 00:00 UTC on the date of the query and that's our
+ * Timestamp for the flight departing. 
+ * Ex: Rule id is 5, Wed May 31 2023 00:00:00 GMT+0000 = 1685491200. STD = 07:00.
+ * (1685491200 + (7 * 3600)) => 1685516400.
+ * Generated ID: 5 + '' + 1685516400 => 51685516400
+ * 
+ */
+generateBufferID = function(databaseObject, todayDateTimeStamp){
+
+    let uniqueBufferID = todayDateTimeStamp + '-' + databaseObject.airline + '-' + databaseObject.flight_number + '-' + databaseObject.scheduled_departure_time
+    return uniqueBufferID;
+}
+
+
 
 // set port, listen for requests
 const PORT = process.env.PORT || 3000;
