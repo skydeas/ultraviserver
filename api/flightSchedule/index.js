@@ -94,8 +94,8 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
 async function fillBufferOnRuleCreation(ruleForm, insertId){
     const secondsPerDay = 86400;
     let today = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
-    let startOfRule = ruleForm.formDate_start;
-    let endOfRule = ruleForm.formDate_end;
+    let startOfRule = parseInt(ruleForm.formDate_start,10);
+    let endOfRule = parseInt(ruleForm.formDate_end,10);
     let firstDayOfBuffer = moment.utc().startOf('day').unix() + (1 * secondsPerDay) //Date is start of day in UTC (00:00:00)
     let lastDayOfBuffer = moment.utc().startOf('day').unix() + (14 * secondsPerDay) //Date is start of day in UTC (00:00:00)
 
@@ -109,25 +109,33 @@ async function fillBufferOnRuleCreation(ruleForm, insertId){
 
     // This for loop is for today, and the length of the  buffer!
     for(let i = 0; i < 15; i++){
+        console.log('We are in the for loop, index: ', i);
         let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
         let databaseName = '';
         const localTimezoneOffset = Math.abs((moment().utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
         const dayOfWeek = moment((dayOfForLoop + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
 
-        console.log('today: ', today);
+        // console.log('today: ', today);
         console.log('dayOfForLoop: ', dayOfForLoop);
         console.log('dayOfWeek: ', dayOfWeek);
 
-        if(dayOfForLoop == today){
-            console.log('activity')
-            databaseName = 'ultravi_ulav.flight_schedule_activity';
-        } else if(dayOfForLoop >= startOfRule && dayOfForLoop <= lastDayOfBuffer ){
-            console.log('buffer')
-            databaseName = 'ultravi_ulav.flight_schedule_buffer';
-        } else {
-            console.log('NOT in the buffer or activity')
-            return;
+        // Check current day of for loop is within contract start / end, if not, return.
+        if(dayOfForLoop >= startOfRule && dayOfForLoop <= endOfRule){
+            // I dislike nested for loops but we use this to check the layered conditions needed for insertion into activity / buffer.
+            if(dayOfForLoop == today){
+                console.log('dayOfForLoop is in activity')
+                databaseName = 'ultravi_ulav.flight_schedule_activity';
+            } else{
+                console.log('dayOfForLoop is in buffer')
+                databaseName = 'ultravi_ulav.flight_schedule_buffer';
+            }
+        } else{
+            // dayOfForLoop is outside the rules so we should just return
+            console.log('dayOfForLoop is NOT in the buffer or activity')
+            continue;
         }
+
+
 
         let generateAndInsertLegsQuery = 
             `
