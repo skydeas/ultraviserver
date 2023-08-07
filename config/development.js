@@ -60,7 +60,7 @@ module.exports = {
         updateAircraftQuery : 'UPDATE ' + databaseName + '.aircrafts SET ac_type=?,ac_reg=?,airline=? WHERE id=?',
         deleteAircraftQuery : 'DELETE FROM ' + databaseName + '.aircrafts WHERE id=?',
         // ac type
-        selectAllAc_typesQuery: 'SELECT * FROM ' + databaseName + '.ac_type',
+        selectAllAc_typesQuery: 'SELECT * FROM ' + databaseName + '.ac_type ORDER BY name;',
         // ====== Password Resert Tokens Table ======
         selectAllPasswordResetTokensQuery : 'SELECT * FROM ' + databaseName + '.account_recovery_tokens',
         addPasswordResetTokenQuery : 'INSERT INTO ' + databaseName + '.account_recovery_tokens (expiration, user_email) VALUES (?,?);',
