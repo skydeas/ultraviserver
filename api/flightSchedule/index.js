@@ -144,7 +144,7 @@ async function fillBufferOnRuleCreation(ruleForm, insertId){
             remarks, flight_number, scheduled_arrival_time, 
             scheduled_departure_time, arrival_city, 
             departure_city, next_leg_pointer, 
-            ac_type)
+            ac_type, flightStatus)
                 (
                 SELECT 
                     queryDateInside.generated_id, 
@@ -158,8 +158,8 @@ async function fillBufferOnRuleCreation(ruleForm, insertId){
                     queryDateInside.arrival_city, 
                     queryDateInside.departure_city, 
                     queryDateInside.next_leg_pointer, 
-                    queryDateInside.ac_type
-                    
+                    queryDateInside.ac_type,
+                    1
                 FROM 
                     (
                     SELECT 
