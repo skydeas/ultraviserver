@@ -86,6 +86,75 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
     })
 });
 
+
+/**
+* Route that retrieves all of the entries from our rules table.
+* We will do the filtering client-side.
+*/
+router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async (req, res) => {
+//console.log(req.body);
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        connectionPool.query(config.queries.updateFlightScheduleRuleQuery, 
+        [
+            boolToNumber(req.body.formRecurring),
+            req.body.formDate_start,
+            req.body.formDate_end,
+            parseInt(req.body.formAirline, 10),
+            req.body.formClient,
+            req.body.formRemarks,
+            req.body.formFlight_number,
+            0, // Flight # out, not used, will delete
+            req.body.formScheduled_arrival_time,
+            req.body.formScheduled_departure_time,
+            req.body.formArrival_city,
+            req.body.formDeparture_city,
+            boolToNumber(req.body.formMonday),
+            boolToNumber(req.body.formTuesday),
+            boolToNumber(req.body.formWednesday),
+            boolToNumber(req.body.formThursday),
+            boolToNumber(req.body.formFriday),
+            boolToNumber(req.body.formSaturday),
+            boolToNumber(req.body.formSunday),
+            parseInt(req.body.form_ac_type, 10),
+            req.body.form_sta_offset,
+            parseInt(req.body.form_id,10)
+            // req.body.form_std_offset, DEPRECATED
+        ], async (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                // responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // Rule has been updated, we must now edit the buffer.
+            // FOR MVP we will delete all buffer flights and re-create them.
+            connectionPool.query(`DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '?-%';`, 
+                [parseInt(req.body.form_id,10)], async (err, response) => {
+                    if (err) {
+                        console.log("Query Error: ", err);
+                        // responseSent = true;
+                        return res.status(500).send({ message: 'Internal Server Error' });
+                    }
+                    // Now that we have deleted the flights from the buffer, let's re-create them!
+            
+                    // Add flights to buffer (if necessary.)
+                    await fillBufferOnRuleCreation(req.body, parseInt(req.body.form_id,10));
+
+                    // console.log(response);
+                    return res.status(200).send(response);
+
+                });
+        });  
+    })
+});
+
 /**
  * Function that creates the legs in the buffer that fit within the contract being created.
  *  Buffer is 14 days from now, today is 0 days from now.
