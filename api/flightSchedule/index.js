@@ -163,6 +163,7 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
 async function fillBufferOnRuleCreation(ruleForm, insertId){
     const secondsPerDay = 86400;
     let today = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
+    let tomorrow = moment.utc().add(1,'day').startOf('day').unix() //Date is start of day in UTC (00:00:00) + 86400 seconds
     let startOfRule = parseInt(ruleForm.formDate_start,10);
     let endOfRule = parseInt(ruleForm.formDate_end,10);
     let firstDayOfBuffer = moment.utc().startOf('day').unix() + (1 * secondsPerDay) //Date is start of day in UTC (00:00:00)
@@ -191,7 +192,8 @@ async function fillBufferOnRuleCreation(ruleForm, insertId){
         // Check current day of for loop is within contract start / end, if not, return.
         if(dayOfForLoop >= startOfRule && dayOfForLoop <= endOfRule){
             // I dislike nested for loops but we use this to check the layered conditions needed for insertion into activity / buffer.
-            if(dayOfForLoop == today){
+            // ATTENTION! Since mark wanted the flight activity to also include tomorrow, we are also including tomorrow in flight activity!
+            if(dayOfForLoop == today || dayOfForLoop == tomorrow){
                 console.log('dayOfForLoop is in activity')
                 databaseName = 'ultravi_ulav.flight_schedule_activity';
             } else{
