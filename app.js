@@ -5,6 +5,7 @@ const moment = require('moment');
 const cron = require('node-cron');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
+const logger = require('./logger');
 
 
 //#region =========================== Configuration of the server ===============================
@@ -133,6 +134,14 @@ app.post('/auth/local', function (req, res) {
                 // res.end();
             } else {
                 console.log(`Username ${currentUser[0].username} just logged in at: ${ moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss')}`);
+                // logger.writeToLogFile(`Username ${currentUser[0].username} just logged in at: ${ moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss')}\n`);
+                // Log to daily Logfile:
+                const dataToAppend = { action: 'login', username: currentUser[0].username, id: currentUser[0].id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss') };
+                const arrayName = 'login'; // Name of the array in the JSON file
+
+                logger.writeToLogFile(dataToAppend, arrayName);
+
+
                 // Since passwords match, generate and return JWT with username, expiration timestamp of 2 hours, and task
                 const jwtBearerToken = jwt.sign({
                     _username: currentUser[0].username,

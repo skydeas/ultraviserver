@@ -8,6 +8,7 @@ const multer = require('multer');
 const connectionPool = mysql.connectionPool;
 const mailer = require('../mailer');
 const moment = require('moment');
+const logger = require('../../logger');
 
 let POVCity = 'MIA';
 
@@ -75,7 +76,11 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
                 // responseSent = true;
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
+            // Log that a user has created a rule:
+            const dataToAppend = { action: 'create rule', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+            const arrayName = 'flightActivity'; // Name of the array in the JSON file
 
+            logger.writeToLogFile(dataToAppend, arrayName);
 
             // Add flights to buffer (if necessary.)
             await fillBufferOnRuleCreation(req.body, response.insertId);
@@ -142,6 +147,13 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
                         // responseSent = true;
                         return res.status(500).send({ message: 'Internal Server Error' });
                     }
+
+                    // Log that a user has updated a rule:
+                    const dataToAppend = { action: 'updated rule', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+                    const arrayName = 'flightActivity'; // Name of the array in the JSON file
+
+                    logger.writeToLogFile(dataToAppend, arrayName);
+
                     // Now that we have deleted the flights from the buffer, let's re-create them!
             
                     // Add flights to buffer (if necessary.)
@@ -308,6 +320,12 @@ async function fillBufferOnRuleCreation(ruleForm, insertId){
                     console.log("Query Error: ", err);
                     throw err
                 }
+
+                // Log that a user has created a rule:
+                const dataToAppend = { action: 'Inserted Leg', username: 'SYSTEM', id: 'NaN', timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response};
+                const arrayName = 'flightActivity'; // Name of the array in the JSON file
+
+                logger.writeToLogFile(dataToAppend, arrayName);
         
                 console.log(response)
             });
@@ -823,6 +841,12 @@ router.post("/saveFlightDelays", auth.authenticateRequest(22), async (req, res) 
                     console.log("Query Error: ", err);
                     return res.status(500).send({ message: 'Internal Server Error' });
                 }
+
+                // Log that a user has created a rule:
+                const dataToAppend = { action: 'save flight delay', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, requestBodyQueryIndex: req.body.queryArray[i]};
+                const arrayName = 'flightActivity'; // Name of the array in the JSON file
+
+                logger.writeToLogFile(dataToAppend, arrayName);
                 // console.log(response);
             }); 
         }
@@ -888,6 +912,11 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
             }
 
             // console.log(response);
+            // Log that a user has updated a leg:
+            const dataToAppend = { action: 'updated leg', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+            const arrayName = 'flightActivity'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
 
             return res.status(200).send(response);
         }); 

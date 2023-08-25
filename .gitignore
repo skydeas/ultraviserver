@@ -38,6 +38,7 @@ testem.log
 /typings
 /src/app/mock-data.ts
 /assets
+/logs
 
 # System files
 .DS_Store
