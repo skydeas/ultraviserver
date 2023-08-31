@@ -238,7 +238,6 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     
     console.log('day of the week: ', dayOfWeek);
     console.log('date: ',date);
-    
     // DATEDIFF(FROM_UNIXTIME(${date_object_15_days_from_now}), FROM_UNIXTIME(queryDateInside.date_start)) AS nth_flight_number
     // queryDateInside.date_start,
     
@@ -348,7 +347,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     });
     
     
-    
+    // Changed the following section so that everything in the buffer BEFORE the date (which is today + 1) is moved over and subsequently deleted.
 
     // Move TODAY to flight Activity:
     let copyFromBufferToActivityQuery = 
@@ -356,7 +355,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
         (date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time, actual_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type, ac_reg, pax, wheelchair_count, isSubservice, flightStatus)
         SELECT date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time,  actual_departure_time, arrival_city,departure_city,next_leg_pointer, ac_type, ac_reg, pax, wheelchair_count, isSubservice, flightStatus
         FROM ultravi_ulav.flight_schedule_buffer
-        WHERE date = ${date}`;
+        WHERE date <= ${date}`;
 
     connectionPool.query(copyFromBufferToActivityQuery, (err, response) => {
         if (err) {
@@ -365,7 +364,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
         }
 
         // Data base been copied, delete the rest?
-        connectionPool.query(`DELETE FROM ultravi_ulav.flight_schedule_buffer WHERE date = ${date}`, (err, response) => {
+        connectionPool.query(`DELETE FROM ultravi_ulav.flight_schedule_buffer WHERE date <= ${date}`, (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 throw err
