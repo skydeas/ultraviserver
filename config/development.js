@@ -92,13 +92,14 @@ module.exports = {
         port: 465,
         secure: true,
         auth: {
-            user: 'mdambrosio@ultravi.com',
-            pass: 'tmw5*lvcd.vi'
+            user: 'do-not-reply@ultravi.com',
+            pass: 'NvM1\'86A£&£;'
         },
         connectionTimeout: 5000,
         greetingTimeout: 5000,
         socketTimeout: 20000
-    })
+    }),
+    mailerName: 'do-not-reply@ultravi.com'
 };
 
 

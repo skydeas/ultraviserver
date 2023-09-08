@@ -217,7 +217,7 @@ let deleteTokenFromDatabase = function (token_id){
 // Function to send an email to the user requesting the password change.
 let sendPasswordResetEmail = function(_token, user_email){
     let message = {
-        from: 'mdambrosio@ultravi.com',
+        from: config.mailerName,
         to: user_email,
         subject: 'Ultravi Portal Password Reset Request',
         html: 
@@ -259,11 +259,11 @@ let sendPasswordResetEmail = function(_token, user_email){
                 <p class="message">
                 If you've lost your password, or wish to reset it, use the link below to get started.
                 </p>
-                <a class="button" href="192.168.1.132:4200/reset-password-request?token=${_token}">Reset Password</a>
+                <a class="button" href="ops.ultravi.net/reset-password-request?token=${_token}">Reset Password</a>
             </div>
             </body>
         </html>
-        `,
+        `, // href="192.168.1.132:4200/reset-password-request IP ADDRESS TO CHANGE. URL to insert
     };
     // REMOVING HTTPS FROM THE LINK, WE NEED TO ADD IT BACK WHEN WE HAVE THE APP HOSTED.
 
