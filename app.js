@@ -6,6 +6,8 @@ const cron = require('node-cron');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
 const logger = require('./logger');
+const https = require('https');
+const fs = require('fs');
 
 
 //#region =========================== Configuration of the server ===============================
@@ -384,7 +386,6 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
  * Ex: Rule id is 5, Wed May 31 2023 00:00:00 GMT+0000 = 1685491200. STD = 07:00.
  * (1685491200 + (7 * 3600)) => 1685516400.
  * Generated ID: 5 + '' + 1685516400 => 51685516400
- * 
  */
 generateBufferID = function(databaseObject, todayDateTimeStamp){
 
@@ -393,10 +394,18 @@ generateBufferID = function(databaseObject, todayDateTimeStamp){
 }
 
 
+// Load SSL/TLS certificate and private key
+const privateKey = fs.readFileSync('../keycopy/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('../keycopy/fullchain.pem', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
+// Create an HTTPS server
+const httpsServer = https.createServer(credentials, app);
+
 
 // set port, listen for requests
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+httpsServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
 });
 
