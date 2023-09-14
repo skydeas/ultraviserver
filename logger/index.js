@@ -40,14 +40,16 @@ async function writeToLogFile(data, arrayName) {
     const fullPath = path.resolve('logs/' + getFileName());
 
     try {
-      // Read existing content from the file or create an empty object
+      // Initialize the array if it doesn't exist
       let logData = {};
+      
+      // Check if the file exists
       if (fs.existsSync(fullPath)) {
+        // Read existing content from the file
         const existingContent = await fs.promises.readFile(fullPath, 'utf8');
         logData = JSON.parse(existingContent);
       }
 
-      // Initialize the array if it doesn't exist
       if (!logData[arrayName]) {
         logData[arrayName] = [];
       }
