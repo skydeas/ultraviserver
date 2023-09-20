@@ -394,20 +394,31 @@ generateBufferID = function(databaseObject, todayDateTimeStamp){
 }
 
 
-// Load SSL/TLS certificate and private key
-const privateKey = fs.readFileSync('../keycopy/privkey.pem', 'utf8');
-const certificate = fs.readFileSync('../keycopy/fullchain.pem', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
+// Check the environment (development or production)
+const isProduction = process.env.NODE_ENV === 'production';
+console.log(isProduction);
 
-// Create an HTTPS server
-const httpsServer = https.createServer(credentials, app);
+// Create an HTTPS server if in production
+let httpsServer;
+if (isProduction) {
+  // Load SSL/TLS certificate and private key
+  const privateKey = fs.readFileSync('../keycopy/privkey.pem', 'utf8');
+  const certificate = fs.readFileSync('../keycopy/fullchain.pem', 'utf8');
+  const credentials = { key: privateKey, cert: certificate };
 
+  // Create the HTTPS server
+  httpsServer = https.createServer(credentials, app);
 
-// set port, listen for requests
-const PORT = process.env.PORT || 3000;
-httpsServer.listen(PORT, () => {
+  // Listen on the appropriate production port
+  const PORT = process.env.PORT || 443; // Use port 443 for HTTPS in production
+  httpsServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
-});
-
+  });
+} else {
+  // In development, use HTTP instead
+  const httpServer = app.listen(3000, () => {
+    console.log('Server is running on port 3000 in development.');
+  });
+}
 // Remove me one development starts, this is for testing request parameters in the API
 // console.log("Request: \n" + util.inspect(req.params, {showHidden: false, depth: null, colors: true}))
