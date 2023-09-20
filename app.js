@@ -410,7 +410,7 @@ if (isProduction) {
   httpsServer = https.createServer(credentials, app);
 
   // Listen on the appropriate production port
-  const PORT = process.env.PORT || 443; // Use port 443 for HTTPS in production
+  const PORT = process.env.PORT || 3000;
   httpsServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
   });
