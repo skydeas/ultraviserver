@@ -156,8 +156,8 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
 
                     // Now that we have deleted the flights from the buffer, let's re-create them!
             
-                    // Add flights to buffer (if necessary.)
-                    await fillBufferOnRuleCreation(req.body, parseInt(req.body.form_id,10));
+                    // Add flights to buffer (if necessary.) // We are ignoring the flight activity and updating only the buffer, not today and tomorrow
+                    await fillBufferOnRuleCreation(req.body, parseInt(req.body.form_id,10), true);
 
                     // console.log(response);
                     return res.status(200).send(response);
@@ -172,7 +172,7 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
  *  Buffer is 14 days from now, today is 0 days from now.
  *  If we need to create Today, + a full buffer, that is a total of 15 days worth of legs.
  */
-async function fillBufferOnRuleCreation(ruleForm, insertId){
+async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = false){
     const secondsPerDay = 86400;
     let today = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
     let tomorrow = moment.utc().add(1,'day').startOf('day').unix() //Date is start of day in UTC (00:00:00) + 86400 seconds
@@ -180,6 +180,13 @@ async function fillBufferOnRuleCreation(ruleForm, insertId){
     let endOfRule = parseInt(ruleForm.formDate_end,10);
     let firstDayOfBuffer = moment.utc().startOf('day').unix() + (1 * secondsPerDay) //Date is start of day in UTC (00:00:00)
     let lastDayOfBuffer = moment.utc().startOf('day').unix() + (14 * secondsPerDay) //Date is start of day in UTC (00:00:00)
+
+    // I is our index. If we want to ignoreActivity, we make the index 2.
+    let i = 0;
+
+    if(ignoreActivity){
+        i = 2
+    }
 
     
     console.log('today ', today)
@@ -190,7 +197,7 @@ async function fillBufferOnRuleCreation(ruleForm, insertId){
 
 
     // This for loop is for today, and the length of the  buffer!
-    for(let i = 0; i < 16; i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
+    for(i = 0; i < 16; i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
         console.log('We are in the for loop, index: ', i);
         let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
         let databaseName = '';
