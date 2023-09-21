@@ -190,7 +190,7 @@ async function fillBufferOnRuleCreation(ruleForm, insertId){
 
 
     // This for loop is for today, and the length of the  buffer!
-    for(let i = 0; i < 15; i++){
+    for(let i = 0; i < 16; i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
         console.log('We are in the for loop, index: ', i);
         let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
         let databaseName = '';
