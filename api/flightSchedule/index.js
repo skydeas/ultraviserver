@@ -814,7 +814,7 @@ router.get("/getDelayCodes", auth.authenticateRequest(22), async (req, res) => {
             
         }
 
-        let query = `SELECT * FROM ultravi_ulav.delay_codes`
+        let query = `SELECT * FROM ultravi_ulav.delay_codes ORDER BY CAST(code AS UNSIGNED), code;`
         //console.log('Query: ', query);
         connectionPool.query(query, (err, response) => {
             if (err) {
