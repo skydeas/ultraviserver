@@ -185,7 +185,8 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
     let i = 0;
 
     if(ignoreActivity){
-        i = 2
+        console.log('Setting Index to 2, Skipping Flight Activity.');
+        i=2;
     }
 
     
@@ -197,7 +198,7 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
 
 
     // This for loop is for today, and the length of the  buffer!
-    for(i = 0; i < 16; i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
+    for(i; i < 16; i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
         console.log('We are in the for loop, index: ', i);
         let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
         let databaseName = '';
