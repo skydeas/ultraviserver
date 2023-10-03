@@ -129,8 +129,8 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
             boolToNumber(req.body.formSunday),
             parseInt(req.body.form_ac_type, 10),
             req.body.form_sta_offset,
+            req.body.next_leg_pointer !== 'null' ? req.body.next_leg_pointer : null,
             parseInt(req.body.form_id,10)
-            // req.body.form_std_offset, DEPRECATED
         ], async (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
