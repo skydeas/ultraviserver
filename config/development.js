@@ -6,6 +6,8 @@ const nodemailer = require('nodemailer');
 // Defined the database name here so we can use it in this file as well, If we need to change database Name.
 const databaseName = 'ultravi_ulav';
 
+
+
 // Production specific configuration
 // =================================
 module.exports = {
@@ -99,7 +101,11 @@ module.exports = {
         greetingTimeout: 5000,
         socketTimeout: 20000
     }),
-    mailerName: 'do-not-reply@ultravi.com'
+    mailerName: 'do-not-reply@ultravi.com',
+    // Day length of flight activity
+    flightActivityLength: 2,
+    // Day length of flight buffer
+    flightBufferLength: 14
 };
 
 

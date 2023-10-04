@@ -233,14 +233,16 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
      *    Once we have inserted those days 
     */
     const secondsPerDay = 86400;
-    const date = moment.utc().startOf('day').add(1, 'days').unix(); //Date is start of day in UTC (00:00:00) (with 1 day added as we are testing tomorrow also being in the activity)
-    let date_object_15_days_from_now = date + (15 * secondsPerDay); // Today + 14
+    //today is start of day in UTC (00:00:00)
+    const today = moment.utc().startOf('day');
+    // Day that the cron will generate. As of 10/4/2023 it is 16 days from today. Ie, OCT 4 @ 2 am est Generates OCT 20
+    const dateToGenerate = today.clone().add((config.flightActivityLength + config.flightBufferLength),'days').unix();
+
     const localTimezoneOffset = Math.abs((moment().utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
-    const dayOfWeek = moment((date_object_15_days_from_now + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
+    const dayOfWeek = moment((dateToGenerate + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
     
     console.log('day of the week: ', dayOfWeek);
-    console.log('date: ',date);
-    // DATEDIFF(FROM_UNIXTIME(${date_object_15_days_from_now}), FROM_UNIXTIME(queryDateInside.date_start)) AS nth_flight_number
+    // DATEDIFF(FROM_UNIXTIME(${dateToGenerate}), FROM_UNIXTIME(queryDateInside.date_start)) AS nth_flight_number
     // queryDateInside.date_start,
     
     let generateAndInsertLegsQuery = 
@@ -275,22 +277,22 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
                         (
                             id,
                             '-', 
-                            (DATEDIFF(FROM_UNIXTIME(${date_object_15_days_from_now}), FROM_UNIXTIME(date_start)))
+                            (DATEDIFF(FROM_UNIXTIME(${dateToGenerate}), FROM_UNIXTIME(date_start)))
                         ) as generated_id, 
-                    ${date_object_15_days_from_now} as date, 
+                    ${dateToGenerate} as date, 
                     airline, 
                     client, 
                     remarks, 
                     flight_number, 
                     (
-                    ${date_object_15_days_from_now} + (
+                    ${dateToGenerate} + (
                         HOUR(scheduled_departure_time) * 3600
                     ) + (
                         MINUTE(scheduled_departure_time) * 60
                     )
                     ) as scheduled_departure_time, 
                     (
-                    ${date_object_15_days_from_now} + (
+                    ${dateToGenerate} + (
                         HOUR(scheduled_arrival_time) * 3600
                     ) + (
                         MINUTE(scheduled_arrival_time) * 60
@@ -306,7 +308,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
                         '-',
                         (
                         SELECT 
-                            (DATEDIFF(FROM_UNIXTIME(${date_object_15_days_from_now}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
+                            (DATEDIFF(FROM_UNIXTIME(${dateToGenerate}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
                         FROM 
                             ultravi_ulav.flight_schedule_rules t 
                         WHERE 
@@ -323,7 +325,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
                         ultravi_ulav.flight_schedule_rules 
                     WHERE 
                         (
-                        ${date_object_15_days_from_now} + (
+                        ${dateToGenerate} + (
                             HOUR(scheduled_departure_time) * 3600
                         ) + (
                             MINUTE(scheduled_departure_time) * 60
@@ -336,7 +338,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
             )
             `
 
-                // console.log('query: ', generateAndInsertLegsQuery);
+    // console.log('query: ', generateAndInsertLegsQuery);
 
     // Insert new rules onto buffer in a single query.
     connectionPool.query(generateAndInsertLegsQuery, (err, response) => {

@@ -174,8 +174,12 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
  */
 async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = false){
     const secondsPerDay = 86400;
+
+    // Today and tomorrow variables used to determine when is flight activty
+    // ===== If we want to extend the activity to more days we need today and tomorrow variables + after tomorrow and so on ======
     let today = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
     let tomorrow = moment.utc().add(1,'day').startOf('day').unix() //Date is start of day in UTC (00:00:00) + 86400 seconds
+
     let startOfRule = parseInt(ruleForm.formDate_start,10);
     let endOfRule = parseInt(ruleForm.formDate_end,10);
     //let firstDayOfBuffer = moment.utc().startOf('day').unix() + (1 * secondsPerDay) //Date is start of day in UTC (00:00:00)
@@ -187,7 +191,7 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
     // If we want to only run this function for the buffer and NOT the flight activity, that's what this boolean is for. (Think editing rules.)
     if(ignoreActivity){
         console.log('Setting Index to 2, Skipping Flight Activity.');
-        i=2;
+        i=config.flightActivityLength;
     }
 
     
@@ -198,8 +202,9 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
     //console.log('lastDayOfBuffer ', lastDayOfBuffer)
 
 
-    // This for loop is for today, and the length of the  buffer!
-    for(i; i <= 16; i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
+    // This for loop is for today + tomorrow, and the length of the  buffer!
+    // As of 10/4/2023, today and tomorrow are the flight activity; The next 14 days are buffer; anything after is rules.
+    for(i; i <= (config.flightActivityLength + config.flightBufferLength); i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
         console.log('We are in the for loop, index: ', i);
         let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
         let databaseName = '';
