@@ -178,12 +178,13 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
     let tomorrow = moment.utc().add(1,'day').startOf('day').unix() //Date is start of day in UTC (00:00:00) + 86400 seconds
     let startOfRule = parseInt(ruleForm.formDate_start,10);
     let endOfRule = parseInt(ruleForm.formDate_end,10);
-    let firstDayOfBuffer = moment.utc().startOf('day').unix() + (1 * secondsPerDay) //Date is start of day in UTC (00:00:00)
-    let lastDayOfBuffer = moment.utc().startOf('day').unix() + (14 * secondsPerDay) //Date is start of day in UTC (00:00:00)
+    //let firstDayOfBuffer = moment.utc().startOf('day').unix() + (1 * secondsPerDay) //Date is start of day in UTC (00:00:00)
+    //let lastDayOfBuffer = moment.utc().startOf('day').unix() + (14 * secondsPerDay) //Date is start of day in UTC (00:00:00)
 
     // I is our index. If we want to ignoreActivity, we make the index 2.
     let i = 0;
 
+    // If we want to only run this function for the buffer and NOT the flight activity, that's what this boolean is for. (Think editing rules.)
     if(ignoreActivity){
         console.log('Setting Index to 2, Skipping Flight Activity.');
         i=2;
@@ -193,12 +194,12 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
     console.log('today ', today)
     console.log('startOfRule ', startOfRule)
     console.log('endOfRule ', endOfRule)
-    console.log('firstDayOfBuffer ', firstDayOfBuffer)
-    console.log('lastDayOfBuffer ', lastDayOfBuffer)
+    //console.log('firstDayOfBuffer ', firstDayOfBuffer)
+    //console.log('lastDayOfBuffer ', lastDayOfBuffer)
 
 
     // This for loop is for today, and the length of the  buffer!
-    for(i; i < 16; i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
+    for(i; i <= 16; i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
         console.log('We are in the for loop, index: ', i);
         let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
         let databaseName = '';
