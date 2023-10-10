@@ -16,7 +16,7 @@ const connectionPool = mysql.connectionPool;
 /**
  * Route to create an airline on the database
  */
-router.post("/createAircraft", auth.authenticateRequest(24),  multer().none(), async (req, res) => {
+router.post("/createAircraft", auth.authenticateRequest(26),  multer().none(), async (req, res) => {
     let responseSent = false;
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
@@ -46,7 +46,7 @@ router.post("/createAircraft", auth.authenticateRequest(24),  multer().none(), a
 /**
  * Route to update an airline on the database
  */
-router.post("/updateAircraft/:id", auth.authenticateRequest(24), multer().none(), async (req, res) => {
+router.post("/updateAircraft/:id", auth.authenticateRequest(26), multer().none(), async (req, res) => {
     let responseSent = false;
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
@@ -79,7 +79,7 @@ router.post("/updateAircraft/:id", auth.authenticateRequest(24), multer().none()
 /**
  * Route to get ALL airlines from database
  */
-router.get("/getAircrafts", auth.authenticateRequest(23),  async (req, res) => {
+router.get("/getAircrafts", auth.authenticateRequest(25),  async (req, res) => {
     let responseSent = false;
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
@@ -104,7 +104,7 @@ router.get("/getAircrafts", auth.authenticateRequest(23),  async (req, res) => {
 /**
  * Route to get ALL ac types from database
  */
-router.get("/getAc_types", auth.authenticateRequest(24),  async (req, res) => {
+router.get("/getAc_types", auth.authenticateRequest(25),  async (req, res) => {
     let responseSent = false;
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
@@ -155,7 +155,7 @@ router.get("/getAircraft/:id", auth.authenticateRequest(25),  async (req, res) =
 /**
  *  Route to get a specific airline from the database
  */ 
-router.get("/deleteAircraft/:id", auth.authenticateRequest(24), async (req, res) => {
+router.get("/deleteAircraft/:id", auth.authenticateRequest(26), async (req, res) => {
     let responseSent = false;
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to

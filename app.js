@@ -352,14 +352,14 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     
     
     // Changed the following section so that everything in the buffer BEFORE the date (which is today + 1) is moved over and subsequently deleted.
-
+    
     // Move TODAY to flight Activity:
     let copyFromBufferToActivityQuery = 
         `INSERT INTO ultravi_ulav.flight_schedule_activity 
         (date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time, actual_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type, ac_reg, pax, wheelchair_count, isSubservice, flightStatus)
         SELECT date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time,  actual_departure_time, arrival_city,departure_city,next_leg_pointer, ac_type, ac_reg, pax, wheelchair_count, isSubservice, flightStatus
         FROM ultravi_ulav.flight_schedule_buffer
-        WHERE date <= ${date}`;
+        WHERE date <= ${today.clone().add(1,'days').unix()}`;
 
     connectionPool.query(copyFromBufferToActivityQuery, (err, response) => {
         if (err) {
@@ -368,7 +368,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
         }
 
         // Data base been copied, delete the rest?
-        connectionPool.query(`DELETE FROM ultravi_ulav.flight_schedule_buffer WHERE date <= ${date}`, (err, response) => {
+        connectionPool.query(`DELETE FROM ultravi_ulav.flight_schedule_buffer WHERE date <= ${today.clone().add(1,'days').unix()}`, (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 throw err
