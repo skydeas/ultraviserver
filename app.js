@@ -76,6 +76,8 @@ app.use('/api/airline', require('./api/airlines'));
 
 app.use('/api/aircraft', require('./api/aircrafts'));
 
+app.use('/api/client', require('./api/clients'));
+
 app.use('/api/mailer', require('./api/mailer'));
 
 app.use('/api/token', require('./api/token'));
@@ -380,7 +382,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     
 });
 
-/**
+/** ========= DEPRECATED?!?!?! =================
  * Generated Leg ID is now of the format: {rule.id} + '' + {generatedTimestamp}
  * the generated timestamp is the STD of the leg in UTC.
  * If a flight leaves at 07:00 UTC, we add (7 * 3600) to 00:00 UTC on the date of the query and that's our
@@ -390,7 +392,6 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
  * Generated ID: 5 + '' + 1685516400 => 51685516400
  */
 generateBufferID = function(databaseObject, todayDateTimeStamp){
-
     let uniqueBufferID = todayDateTimeStamp + '-' + databaseObject.airline + '-' + databaseObject.flight_number + '-' + databaseObject.scheduled_departure_time
     return uniqueBufferID;
 }
