@@ -62,11 +62,16 @@ router.post("/updateClient/:id", auth.authenticateRequest(30), multer().none(), 
             
         }
         connectionPool.query(config.queries.updateClientQuery, 
-            // SET IATA=?,ICAO=?,AircraftName=?,City=?,Country=?,Latitude=?,Longitude=?,Altitude=?,TZ=? WHERE id=?
+            // SET shortName=?,legalName=?,type=?,address=?,city=?,state=?,zip=?,country=? WHERE id=?
         [ 
-            req.body.formAc_type,
-            req.body.formAc_reg,
-            req.body.formAirline,
+            req.body.formShortName,
+            req.body.formLegalName,
+            req.body.formType,
+            req.body.formAddress,
+            req.body.formCity,
+            req.body.formState,
+            req.body.formZip,
+            req.body.formCountry,
             req.params.id
         ], (err, response) => {
             if (err) {
@@ -95,31 +100,6 @@ router.get("/getClients", auth.authenticateRequest(29),  async (req, res) => {
             
         }
         connectionPool.query(config.queries.selectAllClientsQuery, (err, response) => {
-            if (err) {
-                console.log("Query Error: ", err);
-                responseSent = true;
-                return res.status(500).send({ message: 'Internal Server Error' });
-            }
-            // console.log(response);
-            res.json(response);
-        });  
-    })
-});
-
-/**
- * Route to get ALL ac types from database
- */
-router.get("/getAc_types", auth.authenticateRequest(29),  async (req, res) => {
-    let responseSent = false;
-
-    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
-    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
-        if (err || decoded == undefined) {
-            responseSent = true;
-            return res.status(500).send({ message: 'Bad Token' });
-            
-        }
-        connectionPool.query(config.queries.selectAllAc_typesQuery, (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 responseSent = true;

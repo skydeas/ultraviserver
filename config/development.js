@@ -64,8 +64,8 @@ module.exports = {
         // ====== Clients Table ======
         selectAllClientsQuery : 'SELECT * FROM ' + databaseName + '.clients',
         addClientQuery : 'INSERT INTO ' + databaseName + '.clients (shortName, legalName, type, address, city, state, zip, country) VALUES (?,?,?,?,?,?,?,?);',
-        //updateAircraftQuery : 'UPDATE ' + databaseName + '.aircrafts SET ac_type=?,ac_reg=?,airline=? WHERE id=?',
-        //deleteAircraftQuery : 'DELETE FROM ' + databaseName + '.aircrafts WHERE id=?',
+        updateClientQuery : 'UPDATE ' + databaseName + '.clients SET shortName=?,legalName=?,type=?,address=?,city=?,state=?,zip=?,country=? WHERE id=?',
+        deleteClientQuery : 'DELETE FROM ' + databaseName + '.clients WHERE id=?',
         // ac type
         selectAllAc_typesQuery: 'SELECT * FROM ' + databaseName + '.ac_type ORDER BY name;',
         // ====== Password Resert Tokens Table ======
