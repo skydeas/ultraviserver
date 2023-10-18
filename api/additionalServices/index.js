@@ -1,0 +1,222 @@
+const express = require('express');
+const router = express.Router();
+const config = require('../../config/development');
+const mysql = require('mysql2');
+const jwt = require('jsonwebtoken');
+const auth = require('../../auth');
+const multer = require('multer')
+
+//#region  ============================= Middlewares ==========================
+
+//#endregion
+
+const connectionPool = mysql.connectionPool;
+
+/**
+ * Route to create an Additional Service on the database
+ */
+router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().none(), async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.addAdditionalService, 
+        [
+            //(clientId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
+            req.body.clientId,
+            req.body.serviceId,
+            req.body.date,
+            req.body.timeStart,
+            req.body.timeEnd,
+            req.body.flightId,
+            req.body.remarks,
+            req.body.equipmentId,
+            req.body.isComplete,
+            req.body.locationStart,
+            req.body.locationEnd
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+
+            // Access the insert ID from the response
+            //const insertId = response.insertId;
+            return res.status(200).send(response);
+        });  
+    })
+});
+
+/**
+ *  Route to get a specific additional service using the flight id of the modal as the identifier.
+ */ 
+router.get("/getAdditionalServicesByFlightId/:id", auth.authenticateRequest(31),  async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllAdditionalServices + " WHERE flightId=?", [req.params.id], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+});
+
+/**
+ *  Route to get the list of additional service types from the services table to populate drop-down select
+ */ 
+router.get("/getServiceTypes", auth.authenticateRequest(31),  async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllServices, [req.params.id], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+});
+
+
+
+/**
+ * Route to update an airline on the database
+ */
+router.post("/updateClient/:id", auth.authenticateRequest(32), multer().none(), async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.updateClientQuery, 
+            // SET shortName=?,legalName=?,type=?,address=?,city=?,state=?,zip=?,country=? WHERE id=?
+        [ 
+            req.body.formShortName,
+            req.body.formLegalName,
+            req.body.formType,
+            req.body.formAddress,
+            req.body.formCity,
+            req.body.formState,
+            req.body.formZip,
+            req.body.formCountry,
+            req.params.id
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            return res.status(200).send(response);
+        });  
+    })
+});
+
+
+/**
+ * Route to get ALL airlines from database
+ */
+router.get("/getClients", auth.authenticateRequest(31),  async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllClientsQuery, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+});
+
+/**
+ *  Route to get a specific airline from the database
+ */ 
+router.get("/getClient/:id", auth.authenticateRequest(31),  async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllClientsQuery + " WHERE id=?", [req.params.id], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+});
+
+
+/**
+ *  Route to get a specific airline from the database
+ */ 
+router.get("/deleteClient/:id", auth.authenticateRequest(32), async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.deleteClientQuery, [req.params.id], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })   
+});
+module.exports = router;

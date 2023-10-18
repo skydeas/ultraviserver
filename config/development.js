@@ -80,7 +80,12 @@ module.exports = {
         // ====== Flight Activity / Buffer Rules Table ======
         updateFlightActivityLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_activity SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
         updateFlightBufferLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_buffer SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
+        // ====== Additional Services Table ======
+        selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
+        addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
 
+        // ====== Services Table ======
+        selectAllServices : 'SELECT * FROM ' + databaseName + '.services',
         // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
 
     },
