@@ -107,9 +107,9 @@ router.get("/getServiceTypes", auth.authenticateRequest(31),  async (req, res) =
 
 
 /**
- * Route to update an airline on the database
+ * Route to update an additional service on the database
  */
-router.post("/updateClient/:id", auth.authenticateRequest(32), multer().none(), async (req, res) => {
+router.post("/updateAdditionalService/:id", auth.authenticateRequest(32), multer().none(), async (req, res) => {
     let responseSent = false;
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
@@ -119,17 +119,20 @@ router.post("/updateClient/:id", auth.authenticateRequest(32), multer().none(), 
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.updateClientQuery, 
-            // SET shortName=?,legalName=?,type=?,address=?,city=?,state=?,zip=?,country=? WHERE id=?
-        [ 
-            req.body.formShortName,
-            req.body.formLegalName,
-            req.body.formType,
-            req.body.formAddress,
-            req.body.formCity,
-            req.body.formState,
-            req.body.formZip,
-            req.body.formCountry,
+        connectionPool.query(config.queries.updateAdditionalService, 
+            // SET clientId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=? WHERE id=?',
+            [ 
+            req.body.clientId,
+            req.body.serviceId,
+            req.body.date,
+            req.body.timeStart,
+            req.body.timeEnd,
+            req.body.flightId,
+            req.body.remarks,
+            req.body.equipmentId,
+            req.body.isComplete,
+            req.body.locationStart,
+            req.body.locationEnd,
             req.params.id
         ], (err, response) => {
             if (err) {

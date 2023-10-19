@@ -83,11 +83,10 @@ module.exports = {
         // ====== Additional Services Table ======
         selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
         addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
-
+        updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=? WHERE id=?',
         // ====== Services Table ======
         selectAllServices : 'SELECT * FROM ' + databaseName + '.services',
         // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
-
     },
     tokenMaxAge: ('2h'), // 2 hours
     // Array of objects for the manuals (different sections) in our database. If needed we can make this a database object.
