@@ -201,7 +201,7 @@ router.get("/getClient/:id", auth.authenticateRequest(31),  async (req, res) => 
 /**
  *  Route to get a specific airline from the database
  */ 
-router.get("/deleteClient/:id", auth.authenticateRequest(32), async (req, res) => {
+router.get("/deleteAdditionalService/:id", auth.authenticateRequest(32), async (req, res) => {
     let responseSent = false;
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
@@ -211,7 +211,7 @@ router.get("/deleteClient/:id", auth.authenticateRequest(32), async (req, res) =
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.deleteClientQuery, [req.params.id], (err, response) => {
+        connectionPool.query(config.queries.deleteAdditionalService, [req.params.id], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 responseSent = true;

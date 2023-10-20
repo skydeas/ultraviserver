@@ -84,6 +84,7 @@ module.exports = {
         selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
         addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
         updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=? WHERE id=?',
+        deleteAdditionalService: 'DELETE FROM ' + databaseName + '.additional_services WHERE id=?',
         // ====== Services Table ======
         selectAllServices : 'SELECT * FROM ' + databaseName + '.services',
         // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
