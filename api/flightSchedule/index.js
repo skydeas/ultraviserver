@@ -208,7 +208,7 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
         console.log('We are in the for loop, index: ', i);
         let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
         let databaseName = '';
-        const localTimezoneOffset = Math.abs((moment().utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
+        const localTimezoneOffset = Math.abs((moment(dayOfForLoop * 1000).utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
         const dayOfWeek = moment((dayOfForLoop + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
 
         // console.log('today: ', today);

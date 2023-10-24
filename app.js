@@ -242,7 +242,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     // Day that the cron will generate. As of 10/4/2023 it is 16 days from today. Ie, OCT 4 @ 2 am est Generates OCT 20
     const dateToGenerate = today.clone().add((config.flightActivityLength + config.flightBufferLength),'days').unix();
 
-    const localTimezoneOffset = Math.abs((moment().utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
+    const localTimezoneOffset = Math.abs((moment(dateToGenerate * 1000).utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
     const dayOfWeek = moment((dateToGenerate + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
     
     console.log('day of the week: ', dayOfWeek);
