@@ -38,7 +38,8 @@ router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().
             req.body.equipmentId,
             req.body.isComplete,
             req.body.locationStart,
-            req.body.locationEnd
+            req.body.locationEnd,
+            req.body.quantity,
         ], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
@@ -133,6 +134,7 @@ router.post("/updateAdditionalService/:id", auth.authenticateRequest(32), multer
             req.body.isComplete,
             req.body.locationStart,
             req.body.locationEnd,
+            req.body.quantity,
             req.params.id
         ], (err, response) => {
             if (err) {
