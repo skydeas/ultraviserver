@@ -86,7 +86,7 @@ module.exports = {
         updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=?, quantity=? WHERE id=?',
         deleteAdditionalService: 'DELETE FROM ' + databaseName + '.additional_services WHERE id=?',
         // ====== Services Table ======
-        selectAllServices : 'SELECT * FROM ' + databaseName + '.services ORDER BY serviceType',
+        selectAllServices : 'SELECT * FROM ' + databaseName + '.services ORDER BY name',
         // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
     },
     tokenMaxAge: ('2h'), // 2 hours

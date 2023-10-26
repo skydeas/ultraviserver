@@ -36,7 +36,7 @@ router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().
             req.body.flightId,
             req.body.remarks,
             req.body.equipmentId,
-            req.body.isComplete,
+            (req.body.isComplete === 'true' ? 1 : 0), // Mapping the string 'true' and 'false' to 0 and 1;
             req.body.locationStart,
             req.body.locationEnd,
             req.body.quantity,
@@ -112,6 +112,8 @@ router.get("/getServiceTypes", auth.authenticateRequest(31),  async (req, res) =
  */
 router.post("/updateAdditionalService/:id", auth.authenticateRequest(32), multer().none(), async (req, res) => {
     let responseSent = false;
+    console.log((req.body.isComplete ? 1 : 0))
+    console.log(req.body.isComplete)
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
@@ -131,7 +133,7 @@ router.post("/updateAdditionalService/:id", auth.authenticateRequest(32), multer
             req.body.flightId,
             req.body.remarks,
             req.body.equipmentId,
-            req.body.isComplete,
+            (req.body.isComplete === 'true' ? 1 : 0), // Mapping the string 'true' and 'false' to 0 and 1;
             req.body.locationStart,
             req.body.locationEnd,
             req.body.quantity,
