@@ -17,7 +17,6 @@ const connectionPool = mysql.connectionPool;
  */
 router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().none(), async (req, res) => {
     let responseSent = false;
-
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         if (err || decoded == undefined) {
@@ -29,6 +28,7 @@ router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().
         [
             //(clientId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
             req.body.clientId,
+            req.body.airlineId,
             req.body.serviceId,
             req.body.date,
             req.body.timeStart,
@@ -151,6 +151,7 @@ router.post("/updateAdditionalService/:id", auth.authenticateRequest(32), multer
             // SET clientId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=? WHERE id=?',
             [ 
             req.body.clientId,
+            req.body.airlineId,
             req.body.serviceId,
             req.body.date,
             req.body.timeStart,

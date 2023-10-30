@@ -82,8 +82,8 @@ module.exports = {
         updateFlightBufferLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_buffer SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
         // ====== Additional Services Table ======
         selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
-        addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);',
-        updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=?, quantity=? WHERE id=?',
+        addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, airlineId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);',
+        updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, airlineId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=?, quantity=? WHERE id=?',
         deleteAdditionalService: 'DELETE FROM ' + databaseName + '.additional_services WHERE id=?',
         // ====== Services Table ======
         selectAllServices : 'SELECT * FROM ' + databaseName + '.services ORDER BY name',
