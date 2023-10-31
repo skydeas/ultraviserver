@@ -83,9 +83,9 @@ router.get("/getAdditionalServicesByFlightId/:id", auth.authenticateRequest(31),
 /**
  *  Route to get a specific additional service using the flight id of the modal as the identifier.
  */ 
-router.get("/getAdditionalServices", auth.authenticateRequest(31),  async (req, res) => {
+router.post("/getAdditionalServices", auth.authenticateRequest(31),  async (req, res) => {
     let responseSent = false;
-
+    
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         if (err || decoded == undefined) {
@@ -93,7 +93,12 @@ router.get("/getAdditionalServices", auth.authenticateRequest(31),  async (req, 
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.selectAllAdditionalServices, [req.params.id], (err, response) => {
+        connectionPool.query(config.queries.selectAllAdditionalServices + `${(req.body.airlineSearchQuery === "-1" ? "" : " AND airlineId = " + parseInt(req.body.airlineSearchQuery, 10))}` + `${(req.body.clientSearchQuery === "-1" ? "" : " AND clientId = " + parseInt(req.body.clientSearchQuery, 10))}`,
+            [
+                req.body.selectedStartDate,
+                req.body.selectedEndDate
+            ],
+            (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 responseSent = true;
