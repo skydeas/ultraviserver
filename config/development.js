@@ -81,8 +81,8 @@ module.exports = {
         updateFlightActivityLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_activity SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
         updateFlightBufferLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_buffer SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
         // ====== Additional Services Table ======
-        // REPLACED BY ONE WITH FILTERS selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
-        selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services WHERE date BETWEEN ? AND ?',
+        selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
+        selectAllAdditionalServicesWithFilter : 'SELECT * FROM ' + databaseName + '.additional_services WHERE date BETWEEN ? AND ?',
         addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, airlineId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);',
         updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, airlineId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=?, quantity=? WHERE id=?',
         deleteAdditionalService: 'DELETE FROM ' + databaseName + '.additional_services WHERE id=?',

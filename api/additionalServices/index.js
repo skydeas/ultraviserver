@@ -80,12 +80,12 @@ router.get("/getAdditionalServicesByFlightId/:id", auth.authenticateRequest(31),
     })
 });
 
-/**
+/** 
  *  Route to get a specific additional service using the flight id of the modal as the identifier.
  */ 
-router.post("/getAdditionalServices", auth.authenticateRequest(31),  async (req, res) => {
+router.get("/getAdditionalServices", auth.authenticateRequest(31),  async (req, res) => {
     let responseSent = false;
-    
+
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         if (err || decoded == undefined) {
@@ -93,7 +93,33 @@ router.post("/getAdditionalServices", auth.authenticateRequest(31),  async (req,
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.selectAllAdditionalServices + `${(req.body.airlineSearchQuery === "-1" ? "" : " AND airlineId = " + parseInt(req.body.airlineSearchQuery, 10))}` + `${(req.body.clientSearchQuery === "-1" ? "" : " AND clientId = " + parseInt(req.body.clientSearchQuery, 10))}`,
+        connectionPool.query(config.queries.selectAllAdditionalServices,
+            (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+});
+
+/** selectAllAdditionalServicesWithFilter
+ *  Route to get a specific additional service using the flight id of the modal as the identifier.
+ */ 
+router.post("/getAdditionalServicesWithFilter", auth.authenticateRequest(31),  async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllAdditionalServicesWithFilter + `${(req.body.airlineSearchQuery === "-1" ? "" : " AND airlineId = " + parseInt(req.body.airlineSearchQuery, 10))}` + `${(req.body.clientSearchQuery === "-1" ? "" : " AND clientId = " + parseInt(req.body.clientSearchQuery, 10))}`,
             [
                 req.body.selectedStartDate,
                 req.body.selectedEndDate
