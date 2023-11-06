@@ -9,6 +9,7 @@ const connectionPool = mysql.connectionPool;
 const mailer = require('../mailer');
 const moment = require('moment');
 const logger = require('../../logger');
+const development = require('../../config/development');
 
 let POVCity = 'MIA';
 
@@ -90,7 +91,6 @@ router.post("/createRule", auth.authenticateRequest(20), multer().none(), async 
         });  
     })
 });
-
 
 /**
 * Route that retrieves all of the entries from our rules table.
@@ -1017,6 +1017,84 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
     })
 });
 
+
+/**
+ * Route that deletes a fligh leg from the ID passed
+ */
+router.post("/deleteFlightLeg", multer().none(), async (req, res) => { // , if you want permissions use: auth.authenticateRequest(permission ID)
+    console.log('ID: ', req.body)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        
+        const parentId = req.body.id;
+
+        connectionPool.getConnection(function (err, connection) {
+            if (err) {
+                console.log(err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+        
+            connection.beginTransaction(function (err) {
+                if (err) {
+                    console.log(err);
+                    connection.release(); // Release the connection in case of an error
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+        
+                // Delete children from the additional services table
+                connection.query(config.queries.deleteAdditionalServiceByFlightId, [parentId], function (err, result) {
+                    if (err) {
+                        console.log(err);
+                        return connection.rollback(function () {
+                            connection.release(); // Release the connection in case of an error
+                            res.status(500).send({ message: 'Internal Server Error' });
+                        });
+                    }
+        
+                    // Delete children from the delay codes table
+                    connection.query(config.queries.deleteDelayByFlightId, [parentId], function (err, result) {
+                        if (err) {
+                            console.log(err);
+                            return connection.rollback(function () {
+                                connection.release(); // Release the connection in case of an error
+                                res.status(500).send({ message: 'Internal Server Error' });
+                            });
+                        }
+        
+                        // Finally, delete the flight leg
+                        connection.query(config.queries.deleteFlightActivityLegQuery, [parentId], function (err, result) {
+                            if (err) {
+                                console.log(err);
+                                return connection.rollback(function () {
+                                    connection.release(); // Release the connection in case of an error
+                                    res.status(500).send({ message: 'Internal Server Error' });
+                                });
+                            }
+        
+                            connection.commit(function (err) {
+                                if (err) {
+                                    console.log(err);
+                                    return connection.rollback(function () {
+                                        connection.release(); // Release the connection in case of an error
+                                        res.status(500).send({ message: 'Internal Server Error' });
+                                    });
+                                }
+                                connection.release(); // Release the connection
+                                res.status(200).send(result);
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        
+    })
+});
 
 
 
