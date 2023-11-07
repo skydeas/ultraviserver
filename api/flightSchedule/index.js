@@ -785,7 +785,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
 router.get("/getFlightDelays/:id", auth.authenticateRequest(22), async (req, res) => {
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
 
-    console.log(req.params.id);
+    // console.log(req.params.id);
 
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         // If there is a bad token, reject the request.
@@ -1022,7 +1022,6 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
  * Route that deletes a fligh leg from the ID passed
  */
 router.post("/deleteFlightLeg", multer().none(), async (req, res) => { // , if you want permissions use: auth.authenticateRequest(permission ID)
-    console.log('ID: ', req.body)
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         // If there is a bad token, reject the request.

@@ -16,9 +16,29 @@ module.exports = {
             // console.log(req.headers.logintoken);
 
             jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
-                if (err || decoded == undefined) {
-                    return res.status(500).send({ message: 'Bad Token' });
+                if (err) {
+                    //console.error(err); // Log the error for debugging purposes.
+    
+                    if (err.message === 'jwt expired') {
+                        // Handle the case of an expired token
+                        console.log('Token expired at:', err.expiredAt);
+                        // Perform actions like clearing the token from local storage
+                        // Redirect the user to the login page or take any other necessary steps
+    
+                        return res.status(401).send({ message: 'Token expired' });
+                    }
+    
+                    if (err instanceof jwt.JsonWebTokenError || err instanceof jwt.NotBeforeError) {
+                        // Handle other token verification errors
+                        console.log('Invalid Token')
+                        return res.status(401).send({ message: 'Invalid token' });
+                    }
+                    
+                    // Other unexpected errors
+                    return res.status(500).send({ message: 'Internal Server Error' });
                 }
+
+
                 if (decoded !== undefined) {
                     // API Route to get all tasks available to the ID passed in the parameter.
                     connectionPool.query(config.queries.allTasksAvailableToUserById, [decoded._id], (err, results) => {
