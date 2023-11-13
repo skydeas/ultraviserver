@@ -869,6 +869,109 @@ router.post("/saveFlightDelays", auth.authenticateRequest(22), async (req, res) 
 });
 
 /**
+ * Route that creates a single delay for a flight leg
+ */
+router.post("/createDelay", auth.authenticateRequest(22), multer().none(), async (req, res) => {
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        connectionPool.query(config.queries.createDelay, [
+            req.body.leg_id,
+            req.body.min,
+            req.body.code,
+            req.body.at_fault,
+            req.body.remarks !== 'null' ? req.body.remarks : 'NULL', 
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // Log that a user has created a rule:
+            const dataToAppend = { action: 'create flight delay', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, delayForm: req.body};
+            const arrayName = 'flightActivity'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
+            res.status(200).send({message: 'success', response: response});
+        }); 
+    })
+});
+
+/**
+ * Route that updates a single delay for a flight leg by delay id
+ */
+router.post("/updateDelay", auth.authenticateRequest(22), multer().none(), async (req, res) => {
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.updateDelay, [
+            req.body.leg_id,
+            req.body.min,
+            req.body.code,
+            req.body.at_fault,
+            req.body.remarks !== 'null' ? req.body.remarks : 'NULL', 
+            req.body.id
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // Log that a user has created a rule:
+            const dataToAppend = { action: 'update flight delay', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, delayForm: req.body};
+            const arrayName = 'flightActivity'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
+            res.status(200).send({message: 'success', response: response});
+        }); 
+    })
+});
+
+/**
+ * Route that updates a single delay for a flight leg by delay id
+ */
+router.post("/deleteDelay", auth.authenticateRequest(22), multer().none(),async (req, res) => {
+    console.log('Delete delay: ', req.body)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.deleteDelay, [
+            req.body.delayId,
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // Log that a user has created a rule:
+            const dataToAppend = { action: 'update flight delay', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, delayForm: req.body};
+            const arrayName = 'flightActivity'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
+            res.status(200).send({message: 'success', response: response});
+        }); 
+    })
+});
+
+
+
+/**
  * Route that updates a specifci leg from either flight activity or buffer
  * TASK NOT DEFINED. PLEASE CONSULT AND FIX
  */
