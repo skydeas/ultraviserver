@@ -375,36 +375,21 @@ router.post("/getFlightActivity", auth.authenticateRequest(22), async (req, res)
             
         }
 
-        let query = `SELECT * FROM ultravi_ulav.flight_schedule_buffer WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
+        let queryActivity = `SELECT * FROM ultravi_ulav.flight_schedule_activity WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
         // console.log('Query: ', query);
-        connectionPool.query(query, (err, response) => {
+        connectionPool.query(queryActivity, (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
 
-            //console.log(response);
+            // console.log(response);
+            activityArray = response.map((obj) => {
+            return {...obj, origin: 'activity'};
+        });
 
-            bufferArray = response.map((obj) => {
-                return {...obj, origin: 'buffer'};
-            });
-
-            let queryActivity = `SELECT * FROM ultravi_ulav.flight_schedule_activity WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
-            // console.log('Query: ', query);
-            connectionPool.query(queryActivity, (err, response) => {
-                if (err) {
-                    console.log("Query Error: ", err);
-                    return res.status(500).send({ message: 'Internal Server Error' });
-                }
-    
-                // console.log(response);
-                activityArray = response.map((obj) => {
-                return {...obj, origin: 'activity'};
-            });
-
-                //console.log('async')
-                return res.status(200).send(activityArray.concat(bufferArray));
-            }); 
+            //console.log('async')
+            return res.status(200).send(activityArray);
         }); 
     })
 });
