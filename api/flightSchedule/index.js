@@ -954,8 +954,6 @@ router.post("/deleteDelay", auth.authenticateRequest(22), multer().none(),async 
     })
 });
 
-
-
 /**
  * Route that updates a specifci leg from either flight activity or buffer
  * TASK NOT DEFINED. PLEASE CONSULT AND FIX
@@ -1043,34 +1041,32 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
         let tablename = 'flight_schedule_activity';
 
         let query = `
-            INSERT INTO ${databaseName}
-            (ac_type, actual_arrival_time, actual_departure_time, ac_reg, airline, arrival_city, client, date, departure_city, estimated_arrival_time, estimated_departure_time, flight_number, gate, next_leg_pointer, pax, remarks, scheduled_arrival_time, scheduled_departure_time, wheelchair_count, isSubservice, flightStatus, generated_id)
-            SELECT
-                ${parseInt(req.body.ac_type, 10)}, 
-                ${req.body.actual_arrival_time === '' ? 'NULL' : req.body.actual_arrival_time},
-                ${req.body.actual_departure_time === '' ? 'NULL' : req.body.actual_departure_time}, 
-                ${req.body.ac_reg !== 'null' && req.body.ac_reg !== '' ? `'${req.body.ac_reg}'` : 'NULL'},
-                ${parseInt(req.body.airline, 10)}, 
-                '${req.body.arrival_city}', 
-                '${req.body.client}', 
-                ${req.body.date}, 
-                '${req.body.departure_city}', 
-                ${req.body.estimated_arrival_time === '' ? 'NULL' : req.body.estimated_arrival_time}, 
-                ${req.body.estimated_departure_time === '' ? 'NULL' :req.body.estimated_departure_time}, 
-                ${req.body.flight_number}, 
-                ${req.body.gate !== 'null' ? `'${req.body.gate}'` : 'NULL'}, 
-                ${req.body.next_leg_pointer !== 'null' && req.body.next_leg_pointer !== undefined ? `'${req.body.next_leg_pointer}'` : 'NULL'}, 
-                ${req.body.pax !== 'null' && req.body.pax !== '' ? `'${req.body.pax}'` : 'NULL'},
-                '${req.body.remarks}', 
-                ${req.body.scheduled_arrival_time === '' ? 'NULL' : req.body.scheduled_arrival_time}, 
-                ${req.body.scheduled_departure_time === '' ? 'NULL' : req.body.scheduled_departure_time},
-                ${req.body.wheelchair_count !== 'null' && req.body.wheelchair_count !== '' ? `'${req.body.wheelchair_count}'` : 'NULL'},
-                ${req.body.isSubservice !== 'null' && req.body.isSubservice !== undefined ? `'${req.body.isSubservice}'` : 'NULL'}, 
-                ${req.body.flightStatus},
-                CONCAT('', (@autoincrement := AUTO_INCREMENT))
-            FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = "ultravi_ulav"
-            AND TABLE_NAME = "${tablename}";
+        INSERT INTO ${databaseName}
+        (ac_type, actual_arrival_time, actual_departure_time, ac_reg, airline, arrival_city, client, date, departure_city, estimated_arrival_time, estimated_departure_time, flight_number, gate, next_leg_pointer, pax, remarks, scheduled_arrival_time, scheduled_departure_time, wheelchair_count, isSubservice, flightStatus, generated_id)
+        SELECT
+            ${parseInt(req.body.ac_type, 10)}, 
+            ${req.body.actual_arrival_time === '' ? 'NULL' : req.body.actual_arrival_time},
+            ${req.body.actual_departure_time === '' ? 'NULL' : req.body.actual_departure_time}, 
+            ${req.body.ac_reg !== 'null' && req.body.ac_reg !== '' ? `'${req.body.ac_reg}'` : 'NULL'},
+            ${parseInt(req.body.airline, 10)}, 
+            '${req.body.arrival_city}', 
+            '${req.body.client}', 
+            ${req.body.date}, 
+            '${req.body.departure_city}', 
+            ${req.body.estimated_arrival_time === '' ? 'NULL' : req.body.estimated_arrival_time}, 
+            ${req.body.estimated_departure_time === '' ? 'NULL' :req.body.estimated_departure_time}, 
+            ${req.body.flight_number}, 
+            ${req.body.gate !== 'null' ? `'${req.body.gate}'` : 'NULL'}, 
+            ${req.body.next_leg_pointer !== 'null' && req.body.next_leg_pointer !== undefined ? `'${req.body.next_leg_pointer}'` : 'NULL'}, 
+            ${req.body.pax !== 'null' && req.body.pax !== '' ? `'${req.body.pax}'` : 'NULL'},
+            '${req.body.remarks}', 
+            ${req.body.scheduled_arrival_time === '' ? 'NULL' : req.body.scheduled_arrival_time}, 
+            ${req.body.scheduled_departure_time === '' ? 'NULL' : req.body.scheduled_departure_time},
+            ${req.body.wheelchair_count !== 'null' && req.body.wheelchair_count !== '' ? `'${req.body.wheelchair_count}'` : 'NULL'},
+            ${req.body.isSubservice !== 'null' && req.body.isSubservice !== undefined ? `'${req.body.isSubservice}'` : 'NULL'}, 
+            ${req.body.flightStatus},
+            NULL;
+        SELECT LAST_INSERT_ID() as lastId;
         `;
 
         // console.log(query);
@@ -1082,9 +1078,23 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
                 console.log("Query Error: ", err);
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
+            const lastId = response[1][0].lastId;
 
-            console.log(response);
-            return res.status(200).send(response);
+            // Now you can use lastId for further operations
+            const updateQuery = `UPDATE ${databaseName} SET generated_id = ${lastId} WHERE id = ${lastId};`;
+            connectionPool.query(updateQuery, (updateError, updateResults) => {
+                if (updateError) {
+                    console.log("Update Error: ", updateError);
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+        
+                console.log('Update Successful:', updateResults);
+                // return res.status(200).send({ message: 'Insert and Update Successful' });
+                return res.status(200).send(updateResults);
+            });
+
+            // console.log(response);
+            // return res.status(200).send(response);
         }); 
        // return res.status(200).send(req.body);
     })
