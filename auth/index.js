@@ -38,8 +38,25 @@ module.exports = {
                     return res.status(500).send({ message: 'Internal Server Error' });
                 }
 
-
                 if (decoded !== undefined) {
+                    //console.log(decoded);
+
+                    // const timeUntilExpiry = decoded.exp - Math.floor(Date.now() / 1000);
+                    // if (timeUntilExpiry < 1800) { // 1800 seconds = 30 minutes
+                    //     // Regenerate the token
+                    //     // Generate new JWT Token using the same logic as the login function
+                    //     const jwtBearerToken = jwt.sign({
+                    //         _username: decoded._username,
+                    //         _id: decoded._id,
+                    //     }, config.privateKey, {
+                    //         algorithm: 'RS256',
+                    //         expiresIn: config.tokenMaxAge,
+                    //     });
+
+                    //     // Add the new token to the response headers
+                    //     res.setHeader('new-token', jwtBearerToken);
+                    // }
+
                     // API Route to get all tasks available to the ID passed in the parameter.
                     connectionPool.query(config.queries.allTasksAvailableToUserById, [decoded._id], (err, results) => {
                         if (err) {
