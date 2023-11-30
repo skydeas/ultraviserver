@@ -163,6 +163,34 @@ app.post('/auth/local', function (req, res) {
             }
         }
     });
+});
+
+
+/**
+ * Authentication function used to take in a valid JWT token and extend the lifecycle of the logged in token. May
+ * be called twice on the same client action so account for that
+ */
+app.post('/auth/extendLogin', async function (req, res) {
+    isValidResponse = await isTokenValid(req.body.loginToken);
+
+    if(isValidResponse.response == false){
+        // Token not valid, handle:
+        res.json({ 'response': false });
+        return;
+    }
+
+    isValidResponse.data._id
+    // Since passwords match, generate and return JWT with username, expiration timestamp of 2 hours, and task
+    const jwtBearerToken = jwt.sign({
+        _username: isValidResponse.data._username,
+        _id: isValidResponse.data._id,
+    }, config.privateKey, {
+        algorithm: 'RS256',
+        expiresIn: config.tokenMaxAge,
+    });
+
+    // Return signed token
+    res.json(jwtBearerToken);
 })
 
 /**
