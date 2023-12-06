@@ -412,7 +412,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     
 });
 
-/** ========= DEPRECATED?!?!?! =================
+/** ========= DEPRECATED =================
  * Generated Leg ID is now of the format: {rule.id} + '' + {generatedTimestamp}
  * the generated timestamp is the STD of the leg in UTC.
  * If a flight leaves at 07:00 UTC, we add (7 * 3600) to 00:00 UTC on the date of the query and that's our
@@ -429,7 +429,7 @@ generateBufferID = function(databaseObject, todayDateTimeStamp){
 
 // Check the environment (development or production)
 const isProduction = process.env.NODE_ENV === 'production';
-console.log(isProduction);
+console.log('Production: ', isProduction);
 
 // Create an HTTPS server if in production
 let httpsServer;
