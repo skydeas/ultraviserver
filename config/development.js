@@ -95,6 +95,8 @@ module.exports = {
         deleteDelay: 'DELETE FROM ' + databaseName + '.flight_schedule_delays WHERE id=?',
         createDelay: 'INSERT INTO ' + databaseName + '.flight_schedule_delays (leg_id, min, code, at_fault, remarks) VALUES (?,?,?,?,?);',
         updateDelay: 'UPDATE ' + databaseName + '.flight_schedule_delays SET leg_id=?, min=?, code=?, at_fault=?, remarks=? WHERE id=?;',
+        selectAllDelaysWithFilter : 'SELECT * FROM ' + databaseName + '.flight_schedule_delays', //  WHERE date BETWEEN ? AND ?
+
 
         // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
     },

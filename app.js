@@ -86,6 +86,9 @@ app.use('/api/flightSchedule', require('./api/flightSchedule'));
 
 app.use('/api/additionalServices', require('./api/additionalServices'));
 
+app.use('/api/delays', require('./api/delays'));
+
+
 //#region ============================ Authentication Region ===============================
 
 // Extracted the functionality of the route '/auth/isTokenValid' as a function so I can use it in other places.
