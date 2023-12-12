@@ -83,7 +83,7 @@ module.exports = {
         deleteFlightActivityLegQuery: 'DELETE FROM ' + databaseName + '.flight_schedule_activity WHERE id=?',
         // ====== Additional Services Table ======
         selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
-        selectAllAdditionalServicesWithFilter : 'SELECT s.id, s.clientId, s.airlineId, s.serviceId, s.date, s.timeStart, s.timeEnd, s.flightId, s.remarks, s.equipmentId, s.isComplete, s.locationStart, s.locationEnd, s.quantity, a.flight_number FROM ' + databaseName + '.additional_services s JOIN ultravi_ulav.flight_schedule_activity a ON s.flightId = a.id WHERE s.date BETWEEN ? AND ?;',
+        selectAllAdditionalServicesWithFilter : 'SELECT s.id, s.clientId, s.airlineId, s.serviceId, s.date, s.timeStart, s.timeEnd, s.flightId, s.remarks, s.equipmentId, s.isComplete, s.locationStart, s.locationEnd, s.quantity, a.flight_number FROM ' + databaseName + '.additional_services s JOIN ultravi_ulav.flight_schedule_activity a ON s.flightId = a.id WHERE s.date BETWEEN ? AND ?',
         addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, airlineId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);',
         updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, airlineId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=?, quantity=? WHERE id=?',
         deleteAdditionalService: 'DELETE FROM ' + databaseName + '.additional_services WHERE id=?',
