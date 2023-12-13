@@ -964,8 +964,12 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
         // If there is a bad token, reject the request.
         if (err || decoded == undefined) {
             return res.status(500).send({ message: 'Bad Token' });
-            
         }
+
+        let lastUpdatedUserId = decoded._id;
+        let lastUpdatedTimestamp = moment().unix();
+        console.log(lastUpdatedUserId);
+        console.log(lastUpdatedTimestamp);
 
         let startOfDayArrival = moment.unix(req.body.stashed_STA).utc().startOf('day');
         let startOfDayDeparture = moment.unix(req.body.stashed_STD).utc().startOf('day');
@@ -1003,7 +1007,9 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
                 scheduled_departure_time=${req.body.stashed_STD}, 
                 wheelchair_count=${req.body.wheelchair_count !== 'null' && req.body.wheelchair_count !== '' ? `'${req.body.wheelchair_count}'` : 'NULL'},
                 isSubservice=${req.body.isSubservice},
-                flightStatus=${req.body.flightStatus}
+                flightStatus=${req.body.flightStatus},
+                lastUpdatedUserId=${lastUpdatedUserId},
+                lastUpdatedTimestamp=${lastUpdatedTimestamp}
             WHERE id=${req.body.id}`, 
         (err, response) => {
             if (err) {
@@ -1175,6 +1181,26 @@ router.post("/deleteFlightLeg", multer().none(), async (req, res) => { // , if y
             });
         });
         
+    })
+});
+
+
+router.post("/canReopenFlight", multer().none(), async (req, res) => { // , auth.authenticateRequest(22)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+        }
+
+        let currentUser = decoded._id;
+        let currentTimestamp = moment().unix();
+
+        if(currentUser == req.body.lastUpdatedUserId && (Math.abs(currentTimestamp - req.body.lastUpdatedTimestamp) < 86400)){
+            return res.status(200).send(true);
+        } else {
+            return res.status(200).send(false);
+        }
     })
 });
 
