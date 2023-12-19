@@ -8,6 +8,8 @@ const mysql = require('mysql2');
 const logger = require('./logger');
 const https = require('https');
 const fs = require('fs');
+const fsPromise = require('fs').promises;
+const path = require('path');
 
 
 //#region =========================== Configuration of the server ===============================
@@ -254,6 +256,66 @@ app.post('/auth/getTasksById', async function (req, res) {
 })
 //#endregion
 
+// app.get('/images/:id', async function (req, res) {
+//     console.log('Airline id: ' + req.params.id);
+//     try {
+//         const id = req.params.id;
+
+//         // Construct the file path
+//         const filePath = path.join(__dirname, `/assets/images/airlines/${id}.png`);
+//         console.log(filePath);
+//         // Read the file asynchronously
+//         const fileContent = await fsPromise.readFile(filePath);
+
+//         // Set the appropriate content type 
+//         res.setHeader('Content-Type', 'image/png');
+
+//         // Send the file content as the response
+//         res.send(fileContent);
+//     } catch (error) {
+//         // Handle errors, e.g., file not found
+//         console.error(error);
+//         res.status(404).send('File not found');
+//     }
+// })
+
+const defaultImagePath = path.join(__dirname, '/assets/images/airlines/default_large.png');
+
+app.get('/images/:id', async (req, res) => {
+  try {
+    const imagePath = path.join(__dirname, `/assets/images/airlines/${req.params.id}.png`);
+    
+    // Check if the requested image file exists
+    if (fs.existsSync(imagePath)) {
+      // Set the response headers to indicate that the content should be treated as an image (PNG)
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Disposition', 'inline; filename=' + req.params.id + '.png');
+      
+      // Read the PNG file from disk and stream it to the response
+      const fileStream = fs.createReadStream(imagePath);
+
+      fileStream.on('error', function (err) {
+        // Handle the error here, for example by sending an error response to the client
+        console.error('Error reading file:', err);
+        return res.status(500).send('Internal Server Error');
+      });
+
+      fileStream.pipe(res);
+    } else {
+      // If the requested image file doesn't exist, send the default image
+      const defaultImageStream = fs.createReadStream(defaultImagePath);
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Disposition', 'inline; filename=default.png');
+
+      defaultImageStream.pipe(res);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).send('Internal Server Error');
+  }
+});
+
+  
 
 
 /**
@@ -276,6 +338,8 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     const localTimezoneOffset = Math.abs((moment(dateToGenerate * 1000).utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
     const dayOfWeek = moment((dateToGenerate + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
     
+    console.log('Cron generating buffer -- : ', moment());
+    console.log('dateToGenerate: ', dateToGenerate);
     console.log('day of the week: ', dayOfWeek);
     // DATEDIFF(FROM_UNIXTIME(${dateToGenerate}), FROM_UNIXTIME(queryDateInside.date_start)) AS nth_flight_number
     // queryDateInside.date_start,
@@ -373,7 +437,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
             )
             `
 
-    // console.log('query: ', generateAndInsertLegsQuery);
+    console.log('Generate Query: ', generateAndInsertLegsQuery);
 
     // Insert new rules onto buffer in a single query.
     connectionPool.query(generateAndInsertLegsQuery, (err, response) => {

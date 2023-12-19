@@ -1180,9 +1180,9 @@ router.post("/deleteFlightLeg", multer().none(), async (req, res) => { // , if y
                 });
             });
         });
-        
+
     })
-});
+});     
 
 
 router.post("/canReopenFlight", multer().none(), async (req, res) => { // , auth.authenticateRequest(22)
