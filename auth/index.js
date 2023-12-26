@@ -30,7 +30,10 @@ module.exports = {
     
                     if (err instanceof jwt.JsonWebTokenError || err instanceof jwt.NotBeforeError) {
                         // Handle other token verification errors
-                        console.log('Invalid Token')
+                        console.log('Invalid Token in authenticateRequest, printing token: ' + req.headers.logintoken);
+                        console.log('privkey: ', config.privateKey);
+
+
                         return res.status(401).send({ message: 'Invalid token' });
                     }
                     
