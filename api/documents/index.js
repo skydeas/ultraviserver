@@ -339,7 +339,8 @@ router.get("/getAllDocuments", async (req, res) => {
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.selectAllDocumentsQuery + " ORDER BY seq", (err, response) => {
+        // added WHERE ACTIVE = 1 since we anly use this query when editing, and we don't want to be able to edit inactive docs?
+        connectionPool.query(config.queries.selectAllDocumentsQuery + " WHERE active = 1 ORDER BY seq", (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 responseSent = true;
