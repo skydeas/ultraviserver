@@ -25,6 +25,7 @@ module.exports = {
         addUserQuery : 'INSERT INTO ' + databaseName + '.users (username, password, salt, hint, location, airline, active, hr_employee, role, created, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
         updateUserQuery : 'UPDATE  ' + databaseName + '.users SET username = ?, password = ?, salt = ?, hint = ?, location = ?, airline = ?, active = ?, hr_employee = ?, role = ?, created = ?, created_by = ? WHERE id = ?',
         updateUserPasswordByEmailQuery : 'UPDATE  ' + databaseName + '.users SET password = ? WHERE email = ?',
+        selectAllflightCoordinatorsQuery: 'SELECT * FROM ' + databaseName + '.flight_coordinators;',
         // ====== Roles Table ======
         selectAllRolesQuery : 'SELECT * FROM ' + databaseName + '.roles',
         updateRoleQuery : 'UPDATE  ' + databaseName + '.roles SET name = ?, description = ?, created = ?, created_by = ? WHERE id = ?',

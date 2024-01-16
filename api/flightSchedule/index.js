@@ -1009,7 +1009,8 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
                 isSubservice=${req.body.isSubservice},
                 flightStatus=${req.body.flightStatus},
                 lastUpdatedUserId=${lastUpdatedUserId},
-                lastUpdatedTimestamp=${lastUpdatedTimestamp}
+                lastUpdatedTimestamp=${lastUpdatedTimestamp},
+                flight_coordinator=${req.body.flight_coordinator !== 'null' ? `'${req.body.flight_coordinator}'` : 'NULL'}
             WHERE id=${req.body.id}`, 
         (err, response) => {
             if (err) {

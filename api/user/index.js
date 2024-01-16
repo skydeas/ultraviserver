@@ -197,4 +197,16 @@ router.post("/deleteUser", async (req, res) => {
     res.json(QueryResponse);
 });
 
+
+/**
+ * API Route to retrieve a specific user from the database as a JSON object
+ * Asynchronously handles the query to the database thanks to using the connection pool,
+ * the pool.query method is a shrotcut since it handles the connection.release() for us, we
+ * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
+ */
+router.get("/getFlightCoordinators", async (req, res) => {
+    let flightCoordinators = await connectionPool.promise().execute(config.queries.selectAllflightCoordinatorsQuery);
+    res.json(flightCoordinators[0]);
+});
+
 module.exports = router;
