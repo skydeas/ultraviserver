@@ -462,7 +462,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
         let fromUtcMinusOne = fromUtc - 86400; 
         let fromUtcPlusOne = fromUtc + 86400; 
 
-        console.log("Today: ", dayOfWeek, " dayOfWeekMinusOne: ", dayOfWeekMinusOne, " dayOfWeekPlusOne: ", dayOfWeekPlusOne);
+        // console.log("Today: ", dayOfWeek, " dayOfWeekMinusOne: ", dayOfWeekMinusOne, " dayOfWeekPlusOne: ", dayOfWeekPlusOne);
         // =============== For utcOffset ====================
         let offsetMinutes = moment().utcOffset();
 
