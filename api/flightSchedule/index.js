@@ -366,6 +366,27 @@ router.post("/getFlightActivity", auth.authenticateRequest(22), async (req, res)
     let bufferArray = [];
     let activityArray = [];
 
+    // Filter section. Filter being Undefined means we ignore it, filter being -1 means "All" 
+    // selection. So if something is -1 we set the this.xFilter to undefined
+    let airlineFilter = undefined;
+    let clientFilter = undefined;
+
+    if(req.body.airline !== '-1'){
+        this.airlineFilter = req.body.airline;
+    } else {
+        this.airlineFilter = undefined;
+    }
+
+    if(req.body.client !== '-1'){
+        this.clientFilter = req.body.client;
+    } else {
+        this.clientFilter = undefined;
+    }
+
+
+
+    // Area where we are going to either set or leave filters empty.
+
     // Get activity, then Get buffer, append, return to filter.
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
@@ -375,7 +396,21 @@ router.post("/getFlightActivity", auth.authenticateRequest(22), async (req, res)
             
         }
 
-        let queryActivity = `SELECT * FROM ultravi_ulav.flight_schedule_activity WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
+        let queryActivity = `
+            SELECT * 
+            FROM ultravi_ulav.flight_schedule_activity 
+            WHERE 
+            (
+                (arrival_city = '${POVCity}' AND scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})
+                OR 
+                (departure_city = '${POVCity}' AND scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until})
+            )
+            ${this.airlineFilter !== undefined ? `AND airline = ${this.airlineFilter}` : ''}
+            ${this.clientFilter !== undefined ? `AND client = ${this.clientFilter}` : ''};
+        `;
+
+        //console.log(queryActivity)
+
         // console.log('Query: ', query);
         connectionPool.query(queryActivity, (err, response) => {
             if (err) {
@@ -412,7 +447,36 @@ router.post("/getFlightBuffer", auth.authenticateRequest(22), async (req, res) =
         // =============== For utcOffset ====================
         let offsetMinutes = moment().utcOffset();
 
-        let query = `SELECT * FROM ultravi_ulav.flight_schedule_buffer WHERE (arrival_city = '${POVCity}'  AND (scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})) OR (departure_city = '${POVCity}'  AND (scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until}));`
+        // Filter section. Filter being Undefined means we ignore it, filter being -1 means "All" 
+        // selection. So if something is -1 we set the this.xFilter to undefined
+        let airlineFilter = undefined;
+        let clientFilter = undefined;
+
+        if(req.body.airline !== '-1'){
+            this.airlineFilter = req.body.airline;
+        } else {
+            this.airlineFilter = undefined;
+        }
+
+        if(req.body.client !== '-1'){
+            this.clientFilter = req.body.client;
+        } else {
+            this.clientFilter = undefined;
+        }
+
+        let query = `
+            SELECT * 
+            FROM ultravi_ulav.flight_schedule_buffer 
+            WHERE 
+            (
+                (arrival_city = '${POVCity}' AND scheduled_arrival_time BETWEEN ${req.body.from} AND ${req.body.until})
+                OR 
+                (departure_city = '${POVCity}' AND scheduled_departure_time BETWEEN ${req.body.from} AND ${req.body.until})
+            )
+            ${this.airlineFilter !== undefined ? `AND airline = ${this.airlineFilter}` : ''}
+            ${this.clientFilter !== undefined ? `AND client = ${this.clientFilter}` : ''};
+        `;
+
         //console.log('Query: ', query);
         connectionPool.query(query, (err, response) => {
             if (err) {
@@ -445,6 +509,24 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
             return res.status(500).send({ message: 'Bad Token' });
             
         }
+
+        // Filter section. Filter being Undefined means we ignore it, filter being -1 means "All" 
+        // selection. So if something is -1 we set the this.xFilter to undefined
+        let airlineFilter = undefined;
+        let clientFilter = undefined;
+
+        if(req.body.airline !== '-1'){
+            this.airlineFilter = req.body.airline;
+        } else {
+            this.airlineFilter = undefined;
+        }
+
+        if(req.body.client !== '-1'){
+            this.clientFilter = req.body.client;
+        } else {
+            this.clientFilter = undefined;
+        }
+
 
         // =============== For DayOfWeek ====================
 
@@ -725,7 +807,7 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
                     ) as queryDateInsidePlusOne
                 )
             ) as resultQuery
-        WHERE 
+        WHERE ( 
             (
             arrival_city = '${POVCity}' 
             AND (
@@ -738,8 +820,11 @@ router.post("/getFlightRules", auth.authenticateRequest(22), async (req, res) =>
             AND (
                 scheduled_departure_time BETWEEN ${req.body.from} 
                 AND ${req.body.until}
-            )
-        );
+                )
+            )  
+        )         
+        ${this.airlineFilter !== undefined ? `AND airline = ${this.airlineFilter}` : ''}
+        ${this.clientFilter !== undefined ? `AND client = ${this.clientFilter}` : ''};          
         `
 
         //let query = `SELECT * FROM ultravi_ulav.flight_schedule_rules WHERE (arrival_city = '${POVCity}'  AND (${req.body.from} + (HOUR(scheduled_arrival_time)* 3600) + (MINUTE(scheduled_arrival_time) * 60) + (${offsetMinutes} * 60) BETWEEN date_start AND date_end) AND ${dayOfWeek} = true) OR (departure_city = '${POVCity}'  AND (${req.body.from} + (HOUR(scheduled_departure_time)* 3600) + (MINUTE(scheduled_departure_time) * 60) + (${offsetMinutes} * 60) BETWEEN date_start AND date_end) AND ${dayOfWeek} = true);`
