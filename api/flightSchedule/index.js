@@ -1095,7 +1095,9 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
                 flightStatus=${req.body.flightStatus},
                 lastUpdatedUserId=${lastUpdatedUserId},
                 lastUpdatedTimestamp=${lastUpdatedTimestamp},
-                flight_coordinator=${req.body.flight_coordinator !== 'null' ? `'${req.body.flight_coordinator}'` : 'NULL'}
+                flight_coordinator=${req.body.flight_coordinator !== 'null' ? `'${req.body.flight_coordinator}'` : 'NULL'},
+                lob=${req.body.lob !== 'null' && req.body.lob !== '' ? `'${req.body.lob}'` : 'NULL'},
+                rush=${req.body.rush !== 'null' && req.body.rush !== '' ? `'${req.body.rush}'` : 'NULL'}
             WHERE id=${req.body.id}`, 
         (err, response) => {
             if (err) {

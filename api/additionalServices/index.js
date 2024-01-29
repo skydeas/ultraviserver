@@ -106,6 +106,32 @@ router.get("/getAdditionalServices", auth.authenticateRequest(31),  async (req, 
     })
 });
 
+/** 
+ *  Route to get a specific additional service using the flight id of the modal as the identifier.
+ */ 
+router.get("/getAdditionalServicesInDateRange", auth.authenticateRequest(31),  async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllAdditionalServices + `WHERE date BETWEEN ${req.body.from} AND ${req.body.until} `,
+            (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+});
+
 /** selectAllAdditionalServicesWithFilter
  *  Route to get a specific additional service using the flight id of the modal as the identifier.
  */ 
