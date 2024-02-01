@@ -134,8 +134,9 @@ router.get("/getAdditionalServicesInDateRange", auth.authenticateRequest(31),  a
 
 /** selectAllAdditionalServicesWithFilter
  *  Route to get a specific additional service using the flight id of the modal as the identifier.
+ *  WE REMOVED  auth.authenticateRequest(31)
  */ 
-router.post("/getAdditionalServicesWithFilter", auth.authenticateRequest(31),  async (req, res) => {
+router.post("/getAdditionalServicesWithFilter",  async (req, res) => { //REMOVED:  auth.authenticateRequest(31)
     let responseSent = false;
 
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
