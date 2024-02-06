@@ -24,6 +24,10 @@ router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().
             return res.status(500).send({ message: 'Bad Token' });
             
         }
+
+        // Determine the value of flightId or NULL based on req.body.flightId
+        const flightIdValue = req.body.flightId === 'null' ? null : req.body.flightId;
+        
         connectionPool.query(config.queries.addAdditionalService, 
         [
             //(clientId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
@@ -33,7 +37,7 @@ router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().
             req.body.date,
             req.body.timeStart,
             req.body.timeEnd,
-            req.body.flightId,
+            flightIdValue,
             req.body.remarks,
             req.body.equipmentId,
             (req.body.isComplete === 'true' ? 1 : 0), // Mapping the string 'true' and 'false' to 0 and 1;
@@ -157,7 +161,7 @@ router.post("/getAdditionalServicesWithFilter",  async (req, res) => { //REMOVED
                 responseSent = true;
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
-            // console.log(response);
+            console.log(response);
             res.json(response);
         });  
     })
