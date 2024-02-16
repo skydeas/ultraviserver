@@ -99,7 +99,7 @@ router.get("/getClients", auth.authenticateRequest(29),  async (req, res) => {
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.selectAllClientsQuery, (err, response) => {
+        connectionPool.query(config.queries.selectAllClientsQuery  + ' ORDER BY shortName;', (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 responseSent = true;

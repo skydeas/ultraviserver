@@ -87,7 +87,7 @@ router.get("/getAirlines", auth.authenticateRequest(23),  async (req, res) => {
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.selectAllAirlinesQuery, (err, response) => {
+        connectionPool.query(config.queries.selectAllAirlinesQuery + ' ORDER BY name;', (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 responseSent = true;

@@ -24,6 +24,10 @@ router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().
             return res.status(500).send({ message: 'Bad Token' });
             
         }
+
+        // Determine the value of flightId or NULL based on req.body.flightId
+        const flightIdValue = req.body.flightId === 'null' ? null : req.body.flightId;
+        
         connectionPool.query(config.queries.addAdditionalService, 
         [
             //(clientId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
@@ -33,7 +37,7 @@ router.post("/createAdditionalService", auth.authenticateRequest(32),  multer().
             req.body.date,
             req.body.timeStart,
             req.body.timeEnd,
-            req.body.flightId,
+            flightIdValue,
             req.body.remarks,
             req.body.equipmentId,
             (req.body.isComplete === 'true' ? 1 : 0), // Mapping the string 'true' and 'false' to 0 and 1;
@@ -105,6 +109,33 @@ router.get("/getAdditionalServices", auth.authenticateRequest(31),  async (req, 
         });  
     })
 });
+
+/** 
+ *  Route to get a specific additional service using the id of the service as the identifier.
+ */ 
+router.get("/getAdditionalService/:id", auth.authenticateRequest(31),  async (req, res) => {
+    let responseSent = false;
+
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            responseSent = true;
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        connectionPool.query(config.queries.selectAllAdditionalServices + ` where id = ${req.params.id}`,
+            (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                responseSent = true;
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.json(response);
+        });  
+    })
+});
+
 
 /** 
  *  Route to get a specific additional service using the flight id of the modal as the identifier.
@@ -198,6 +229,9 @@ router.post("/updateAdditionalService/:id", auth.authenticateRequest(32), multer
     console.log((req.body.isComplete ? 1 : 0))
     console.log(req.body.isComplete)
 
+    const flightIdValue = req.body.flightId === 'null' ? null : req.body.flightId;
+
+
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         if (err || decoded == undefined) {
@@ -214,7 +248,7 @@ router.post("/updateAdditionalService/:id", auth.authenticateRequest(32), multer
             req.body.date,
             req.body.timeStart,
             req.body.timeEnd,
-            req.body.flightId,
+            flightIdValue,
             req.body.remarks,
             req.body.equipmentId,
             (req.body.isComplete === 'true' ? 1 : 0), // Mapping the string 'true' and 'false' to 0 and 1;
