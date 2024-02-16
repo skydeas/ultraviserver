@@ -92,7 +92,7 @@ module.exports = {
                 ultravi_ulav.flight_schedule_activity a ON s.flightId = a.id 
             WHERE 
         s.date BETWEEN ? AND ?`,
-            addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, airlineId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);',
+        addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, airlineId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);',
         updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, airlineId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=?, quantity=? WHERE id=?',
         deleteAdditionalService: 'DELETE FROM ' + databaseName + '.additional_services WHERE id=?',
         deleteAdditionalServiceByFlightId: 'DELETE FROM ' + databaseName + '.additional_services WHERE flightId=?',
