@@ -242,7 +242,7 @@ router.post("/updateAdditionalService/:id", auth.authenticateRequest(32), multer
         connectionPool.query(config.queries.updateAdditionalService, 
             // SET clientId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=? WHERE id=?',
             [ 
-            req.body.clientId,
+            req.body.clientId, 
             req.body.airlineId,
             req.body.serviceId,
             req.body.date,

@@ -104,11 +104,24 @@ module.exports = {
         createDelay: 'INSERT INTO ' + databaseName + '.flight_schedule_delays (leg_id, min, code, at_fault, remarks) VALUES (?,?,?,?,?);',
         updateDelay: 'UPDATE ' + databaseName + '.flight_schedule_delays SET leg_id=?, min=?, code=?, at_fault=?, remarks=? WHERE id=?;',
         selectAllDelaysWithFilter : 'SELECT * FROM ' + databaseName + '.flight_schedule_delays', //  WHERE date BETWEEN ? AND ?
+        // ====== FIS Table =======
+        createFis: 'INSERT INTO ' + databaseName + '.fis (facility, airlineId, ac_Type, body_type, flight_number, scheduled_arrival_time, block_time, first_priority, last_priority, first_bag, last_bag, remarks) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
 
 
         // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
     },
     tokenMaxAge: ('2h'), // 2 hours
+    facilities: 
+    [
+        {'name': 'D', id: 1},
+        {'name': 'E', id: 2},
+        {'name': 'F', id: 3},
+    ],
+    aircraftBodyTypes: 
+    [
+        {'name': 'Wide', id: 1},
+        {'name': 'Narrow', id: 2},
+    ],
     // Array of objects for the manuals (different sections) in our database. If needed we can make this a database object.
     documentationManuals: [
         {categoryName: "Employee Handbook", docname: "EH", task_id: 11},

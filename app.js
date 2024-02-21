@@ -90,6 +90,8 @@ app.use('/api/additionalServices', require('./api/additionalServices'));
 
 app.use('/api/delays', require('./api/delays'));
 
+app.use('/api/fis', require('./api/fis'));
+
 
 //#region ============================ Authentication Region ===============================
 
@@ -326,7 +328,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     // console.log('Running script at 2 am');
 
     /**   We should do a couple of things
-     *    Flight buffer filling: We have to grab the item from 14 days away and insert it into the buffer
+     *    Flight buffer filling: We have to grab the item from 14 days away and i   nsert it into the buffer
      *    Once we have inserted those days 
     */
     const secondsPerDay = 86400;
