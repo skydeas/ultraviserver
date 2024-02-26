@@ -15,66 +15,7 @@ let POVCity = 'MIA';
 const connectionPool = mysql.connectionPool;
 
 /**
- * Route that retrieves all of delay codes
- */
-router.get("/getDelayCodes", auth.authenticateRequest(37), async (req, res) => {
-    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
-    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
-        // If there is a bad token, reject the request.
-        if (err || decoded == undefined) {
-            return res.status(500).send({ message: 'Bad Token' });
-            
-        }
-
-        let query = `SELECT * FROM ultravi_ulav.delay_codes ORDER BY CAST(code AS UNSIGNED), code;`
-        //console.log('Query: ', query);
-        connectionPool.query(query, (err, response) => {
-            if (err) {
-                console.log("Query Error: ", err);
-                return res.status(500).send({ message: 'Internal Server Error' });
-            }
-
-            // console.log(response);
-
-            return res.status(200).send(response);
-        }); 
-    })
-});
-
-/**
- * Route that retrieves all of delay codes
- */
-router.post("/saveFlightDelays", auth.authenticateRequest(44), async (req, res) => {
-    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
-    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
-        // If there is a bad token, reject the request.
-        if (err || decoded == undefined) {
-            return res.status(500).send({ message: 'Bad Token' });
-            
-        }
-
-        // console.log('Queries: ', req.body.queryArray);
-        for(let i = 0; i < req.body.queryArray.length;i++){
-            connectionPool.query(req.body.queryArray[i], (err, response) => {
-                if (err) {
-                    console.log("Query Error: ", err);
-                    return res.status(500).send({ message: 'Internal Server Error' });
-                }
-
-                // Log that a user has created a rule:
-                const dataToAppend = { action: 'save flight delay', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, requestBodyQueryIndex: req.body.queryArray[i]};
-                const arrayName = 'flightActivity'; // Name of the array in the JSON file
-
-                logger.writeToLogFile(dataToAppend, arrayName);
-                // console.log(response);
-            }); 
-        }
-        res.status(200).send({message: 'success'});
-    })
-});
-
-/**
- * Route that creates a single delay for a flight leg
+ * Route that creates a single fis Item
  */
 router.post("/createFis", auth.authenticateRequest(44), multer().none(), async (req, res) => {
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
@@ -86,18 +27,18 @@ router.post("/createFis", auth.authenticateRequest(44), multer().none(), async (
         }
 
         connectionPool.query(config.queries.createFis, [
-            req.body.facility, // Req
-            req.body.airlineId, // Req
-            req.body.ac_type !== 'null' ? req.body.ac_type : null,
-            req.body.body_type !== 'null' ? req.body.body_type : null,
-            req.body.flight_number, // Req
-            req.body.scheduled_arrival_time, // Req
-            req.body.block_time !== 'null' ? req.body.block_time : null,
-            req.body.first_priority !== 'null' ? req.body.first_priority : null,
-            req.body.last_priority !== 'null' ? req.body.last_priority : null,
-            req.body.first_bag !== 'null' ? req.body.first_bag : null,
-            req.body.last_bag !== 'null' ? req.body.last_bag : null,
-            req.body.remarks !== 'null' ? req.body.remarks : null,
+            req.body.facility, // Required
+            req.body.airlineId, // Required
+            req.body.ac_type !== 'null' && req.body.ac_type !== '' ? req.body.ac_type : null,
+            req.body.body_type !== 'null' && req.body.body_type !== '' ? req.body.body_type : null,
+            req.body.flight_number, // Required
+            req.body.scheduled_arrival_time, // Required
+            req.body.block_time !== 'null' && req.body.block_time !== '' ? req.body.block_time : null,
+            req.body.first_priority !== 'null' && req.body.first_priority !== '' ? req.body.first_priority : null,
+            req.body.last_priority !== 'null' && req.body.last_priority !== '' ? req.body.last_priority : null,
+            req.body.first_bag !== 'null' && req.body.first_bag !== '' ? req.body.first_bag : null,
+            req.body.last_bag !== 'null' && req.body.last_bag !== '' ? req.body.last_bag : null,
+            req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,
         ], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
@@ -116,9 +57,9 @@ router.post("/createFis", auth.authenticateRequest(44), multer().none(), async (
 });
 
 /**
- * Route that updates a single delay for a flight leg by delay id
+ * Route that updates a single fis Item by Id
  */
-router.post("/updateDelay", auth.authenticateRequest(44), multer().none(), async (req, res) => {
+router.post("/updateFis", auth.authenticateRequest(44), multer().none(), async (req, res) => {
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         // If there is a bad token, reject the request.
@@ -126,13 +67,21 @@ router.post("/updateDelay", auth.authenticateRequest(44), multer().none(), async
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.updateDelay, [
-            req.body.leg_id,
-            req.body.min,
-            req.body.code,
-            req.body.at_fault,
-            req.body.remarks !== 'null' ? req.body.remarks : null,
-            req.body.id
+
+        connectionPool.query(config.queries.updateFis, [
+            req.body.facility, // Required
+            req.body.airlineId, // Required
+            req.body.ac_type !== 'null' && req.body.ac_type !== '' ? req.body.ac_type : null,
+            req.body.body_type !== 'null' && req.body.body_type !== '' ? req.body.body_type : null,
+            req.body.flight_number, // Required
+            req.body.scheduled_arrival_time, // Required
+            req.body.block_time !== 'null' && req.body.block_time !== '' ? req.body.block_time : null,
+            req.body.first_priority !== 'null' && req.body.first_priority !== '' ? req.body.first_priority : null,
+            req.body.last_priority !== 'null' && req.body.last_priority !== '' ? req.body.last_priority : null,
+            req.body.first_bag !== 'null' && req.body.first_bag !== '' ? req.body.first_bag : null,
+            req.body.last_bag !== 'null' && req.body.last_bag !== '' ? req.body.last_bag : null,
+            req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,
+            req.body.id,
         ], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
@@ -140,7 +89,7 @@ router.post("/updateDelay", auth.authenticateRequest(44), multer().none(), async
             }
 
             // Log that a user has created a rule:
-            const dataToAppend = { action: 'update flight delay', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, delayForm: req.body};
+            const dataToAppend = { action: 'create FIS ', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, delayForm: req.body};
             const arrayName = 'flightActivity'; // Name of the array in the JSON file
 
             logger.writeToLogFile(dataToAppend, arrayName);
@@ -151,9 +100,32 @@ router.post("/updateDelay", auth.authenticateRequest(44), multer().none(), async
 });
 
 /**
+ * Route that retrieves a single FIS by Id passed as a form, accessed by req.body.id
+ */
+router.post("/getFisById", auth.authenticateRequest(44), multer().none(), async (req, res) => {
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        console.log(req.body)
+        connectionPool.query(config.queries.getFisById, req.body.id, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            return res.status(200).send(response);
+        }); 
+    })
+});
+
+/**
  * Route that updates a single delay for a flight leg by delay id
  */
-router.post("/deleteDelay", auth.authenticateRequest(44), multer().none(),async (req, res) => {
+router.post("/deleteFisById", auth.authenticateRequest(44), multer().none(),async (req, res) => {
     console.log('Delete delay: ', req.body)
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
@@ -162,19 +134,13 @@ router.post("/deleteDelay", auth.authenticateRequest(44), multer().none(),async 
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.deleteDelay, [
-            req.body.delayId,
+        connectionPool.query(config.queries.deleteFisById, [
+            req.body.id,
         ], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
-
-            // Log that a user has created a rule:
-            const dataToAppend = { action: 'update flight delay', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, delayForm: req.body};
-            const arrayName = 'flightActivity'; // Name of the array in the JSON file
-
-            logger.writeToLogFile(dataToAppend, arrayName);
 
             res.status(200).send({message: 'success', response: response});
         }); 
