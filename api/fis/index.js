@@ -46,7 +46,7 @@ router.post("/createFis", auth.authenticateRequest(44), multer().none(), async (
             }
 
             // Log that a user has created a rule:
-            const dataToAppend = { action: 'create FIS ', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, delayForm: req.body};
+            const dataToAppend = { action: 'create FIS ', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, fisForm: req.body};
             const arrayName = 'flightActivity'; // Name of the array in the JSON file
 
             logger.writeToLogFile(dataToAppend, arrayName);
@@ -89,7 +89,7 @@ router.post("/updateFis", auth.authenticateRequest(44), multer().none(), async (
             }
 
             // Log that a user has created a rule:
-            const dataToAppend = { action: 'create FIS ', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, delayForm: req.body};
+            const dataToAppend = { action: 'update FIS ', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, fisForm: req.body};
             const arrayName = 'flightActivity'; // Name of the array in the JSON file
 
             logger.writeToLogFile(dataToAppend, arrayName);
