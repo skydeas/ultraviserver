@@ -117,7 +117,7 @@ module.exports = {
     [
         {'name': 'D', id: 1},
         {'name': 'E', id: 2},
-        {'name': 'F', id: 3},
+        {'name': 'J', id: 3},
     ],
     aircraftBodyTypes: 
     [
