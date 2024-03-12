@@ -38,6 +38,7 @@ router.post("/createFis", auth.authenticateRequest(44), multer().none(), async (
             req.body.last_priority !== 'null' && req.body.last_priority !== '' ? req.body.last_priority : null,
             req.body.first_bag !== 'null' && req.body.first_bag !== '' ? req.body.first_bag : null,
             req.body.last_bag !== 'null' && req.body.last_bag !== '' ? req.body.last_bag : null,
+            req.body.carrousel !== 'null' && req.body.carrousel !== '' ? req.body.carrousel : null,
             req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,
         ], (err, response) => {
             if (err) {
@@ -80,6 +81,7 @@ router.post("/updateFis", auth.authenticateRequest(44), multer().none(), async (
             req.body.last_priority !== 'null' && req.body.last_priority !== '' ? req.body.last_priority : null,
             req.body.first_bag !== 'null' && req.body.first_bag !== '' ? req.body.first_bag : null,
             req.body.last_bag !== 'null' && req.body.last_bag !== '' ? req.body.last_bag : null,
+            req.body.carrousel !== 'null' && req.body.carrousel !== '' ? req.body.carrousel : null,
             req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,
             req.body.id,
         ], (err, response) => {
@@ -179,6 +181,7 @@ router.post("/getFisListWithFilter", auth.authenticateRequest(43), async (req, r
         f.last_priority AS last_priority,
         f.first_bag AS first_bag,
         f.last_bag AS last_bag,
+        f.carrousel AS carrousel,
         f.remarks AS remarks
       FROM
         ultravi_ulav.fis f

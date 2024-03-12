@@ -105,8 +105,8 @@ module.exports = {
         updateDelay: 'UPDATE ' + databaseName + '.flight_schedule_delays SET leg_id=?, min=?, code=?, at_fault=?, remarks=? WHERE id=?;',
         selectAllDelaysWithFilter : 'SELECT * FROM ' + databaseName + '.flight_schedule_delays', //  WHERE date BETWEEN ? AND ?
         // ====== FIS Table =======
-        createFis: 'INSERT INTO ' + databaseName + '.fis (facility, airlineId, ac_Type, body_type, flight_number, scheduled_arrival_time, block_time, first_priority, last_priority, first_bag, last_bag, remarks) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
-        updateFis: 'UPDATE ' + databaseName + '.fis SET facility=?, airlineId=?, ac_Type=?, body_type=?, flight_number=?, scheduled_arrival_time=?, block_time=?, first_priority=?, last_priority=?, first_bag=?, last_bag=?, remarks=? WHERE id = ?',
+        createFis: 'INSERT INTO ' + databaseName + '.fis (facility, airlineId, ac_Type, body_type, flight_number, scheduled_arrival_time, block_time, first_priority, last_priority, first_bag, last_bag, carrousel, remarks) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        updateFis: 'UPDATE ' + databaseName + '.fis SET facility=?, airlineId=?, ac_Type=?, body_type=?, flight_number=?, scheduled_arrival_time=?, block_time=?, first_priority=?, last_priority=?, first_bag=?, last_bag=?, carrousel=?, remarks=? WHERE id = ?',
         getFisById: 'SELECT * FROM ' + databaseName + '.fis WHERE id = ?',
         deleteFisById: 'DELETE FROM ' + databaseName + '.fis WHERE id = ?',
 
