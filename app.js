@@ -92,6 +92,15 @@ app.use('/api/delays', require('./api/delays'));
 
 app.use('/api/fis', require('./api/fis'));
 
+app.use('/api/trc', require('./api/trc'));
+
+app.use('/api/pax', require('./api/pax'));
+
+app.use('/api/ramp', require('./api/ramp'));
+
+app.use('/api/cabin', require('./api/cabin'));
+
+app.use('/api/security', require('./api/security'));
 
 //#region ============================ Authentication Region ===============================
 
