@@ -18,8 +18,8 @@ const connectionPool = mysql.connectionPool;
  * Route that retrieves all TRC
  */
 
-// 47 is view TRC tab so remove in needed
-router.get("/getAllTrc", auth.authenticateRequest(47), multer().none(), async (req, res) => { // 47 is view TRC tab so remove in needed
+// 47 is view TRC tab so remove if needed
+router.get("/getAllTrc", auth.authenticateRequest(47), multer().none(), async (req, res) => { // 47 is view TRC tab so remove if needed
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         // If there is a bad token, reject the request.
@@ -40,6 +40,120 @@ router.get("/getAllTrc", auth.authenticateRequest(47), multer().none(), async (r
     })
 });
 
+/**
+ * Route that retrieves TRC by flight Id
+ */
+
+// 47 is view TRC tab so remove if needed
+router.post("/getTrcByFlightId", auth.authenticateRequest(47), multer().none(), async (req, res) => { // 47 is view TRC tab so remove if needed
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        // console.log(req.body)
+
+        connectionPool.query(config.queries.getTrcByFlightId, [
+            req.body.flightId,
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            console.log(response)
+            return res.status(200).send(response[0]);
+        }); 
+    })
+});
+
+/**
+ * Route that creates TRC by flight Id
+ */
+
+// 52 is edit TRC tab so remove if needed
+router.post("/createTrc", auth.authenticateRequest(52), multer().none(), async (req, res) => { // 52 is edit TRC tab so remove if needed
+    console.log(req.body)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        // console.log(req.body)
+
+        connectionPool.query(config.queries.createTrc, [
+            req.body.cabinCrewArrivalTime !== 'null' ? req.body.cabinCrewArrivalTime : 'NULL', 
+            boolToNumber(req.body.cateringEquipmentProcedureFollowed),
+            req.body.cateringOnloadTime !== 'null' ? req.body.cateringOnloadTime : 'NULL', 
+            req.body.cateringOffloadTime !== 'null' ? req.body.cateringOffloadTime : 'NULL', 
+            boolToNumber(req.body.fuelingSafetyProcedureFollowed),
+            req.body.fuelingUplift !== 'null' ? req.body.fuelingUplift : 'NULL', 
+            req.body.fuelingTicket !== 'null' ? req.body.fuelingTicket : 'NULL', 
+            boolToNumber(req.body.toiletService),
+            boolToNumber(req.body.waterService),
+            req.body.remarks !== 'null' ? req.body.remarks : 'NULL', 
+            req.body.flightId
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            console.log(response)
+            return res.status(200).send(response[0]);
+        }); 
+    })
+});
+
+/**
+ * Route that updates TRC by flight Id
+ */
+
+// 52 is edit TRC tab so remove if needed
+router.post("/updateTrc", auth.authenticateRequest(52), multer().none(), async (req, res) => { // 52 is edit TRC tab so remove if needed
+    console.log(req.body)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        // console.log(req.body)
+
+        connectionPool.query(config.queries.updateTrc, [
+            req.body.cabinCrewArrivalTime !== 'null' ? req.body.cabinCrewArrivalTime : 'NULL', 
+            boolToNumber(req.body.cateringEquipmentProcedureFollowed),
+            req.body.cateringOnloadTime !== 'null' ? req.body.cateringOnloadTime : 'NULL', 
+            req.body.cateringOffloadTime !== 'null' ? req.body.cateringOffloadTime : 'NULL', 
+            boolToNumber(req.body.fuelingSafetyProcedureFollowed),
+            req.body.fuelingUplift !== 'null' ? req.body.fuelingUplift : 'NULL', 
+            req.body.fuelingTicket !== 'null' ? req.body.fuelingTicket : 'NULL', 
+            boolToNumber(req.body.toiletService),
+            boolToNumber(req.body.waterService),
+            req.body.remarks !== 'null' ? req.body.remarks : 'NULL', 
+            req.body.flightId
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            console.log(response)
+            return res.status(200).send(response[0]);
+        }); 
+    })
+});
+
+function boolToNumber(boolString) {
+    tempBool = JSON.parse(boolString);
+    if(tempBool){
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
 module.exports = router;
 

@@ -111,9 +111,12 @@ module.exports = {
         deleteFisById: 'DELETE FROM ' + databaseName + '.fis WHERE id = ?',
         // ====== TRC Table =======
         getAllTrc: 'SELECT * FROM ' + databaseName + '.trc;',
+        getTrcByFlightId: 'SELECT * FROM ' + databaseName + '.trc WHERE flightId=?',
+        createTrc: 'INSERT INTO ' + databaseName + '.trc (cabinCrewArrivalTime, cateringEquipmentProcedureFollowed, cateringOnloadTime, cateringOffloadTime, fuelingSafetyProcedureFollowed, fuelingUplift, fuelingTicket, toiletService, waterService, remarks, flightId) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
+        updateTrc: 'UPDATE ' + databaseName + '.trc SET cabinCrewArrivalTime=?, cateringEquipmentProcedureFollowed=?, cateringOnloadTime=?, cateringOffloadTime=?, fuelingSafetyProcedureFollowed=?, fuelingUplift=?, fuelingTicket=?, toiletService=?, waterService=?, remarks=? WHERE flightId=?',
         // ====== Pax Table =======
         getAllPax: 'SELECT * FROM ' + databaseName + '.pax;',
-        // ====== Ramp Table =======
+        // ====== Ramp Table =======a
         getAllRamp: 'SELECT * FROM ' + databaseName + '.ramp;',
         // ====== Cabin Table =======
         getAllCabin: 'SELECT * FROM ' + databaseName + '.cabin;',
