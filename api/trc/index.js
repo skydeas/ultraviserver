@@ -74,7 +74,7 @@ router.post("/getTrcByFlightId", auth.authenticateRequest(47), multer().none(), 
 
 // 52 is edit TRC tab so remove if needed
 router.post("/createTrc", auth.authenticateRequest(52), multer().none(), async (req, res) => { // 52 is edit TRC tab so remove if needed
-    console.log(req.body)
+    //console.log(req.body)
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         // If there is a bad token, reject the request.
@@ -85,16 +85,16 @@ router.post("/createTrc", auth.authenticateRequest(52), multer().none(), async (
         // console.log(req.body)
 
         connectionPool.query(config.queries.createTrc, [
-            req.body.cabinCrewArrivalTime !== 'null' ? req.body.cabinCrewArrivalTime : 'NULL', 
+            req.body.cabinCrewArrivalTime !== 'null' ? req.body.cabinCrewArrivalTime : null, 
             boolToNumber(req.body.cateringEquipmentProcedureFollowed),
-            req.body.cateringOnloadTime !== 'null' ? req.body.cateringOnloadTime : 'NULL', 
-            req.body.cateringOffloadTime !== 'null' ? req.body.cateringOffloadTime : 'NULL', 
+            req.body.cateringOnloadTime !== 'null' ? req.body.cateringOnloadTime : null, 
+            req.body.cateringOffloadTime !== 'null' ? req.body.cateringOffloadTime : null, 
             boolToNumber(req.body.fuelingSafetyProcedureFollowed),
-            req.body.fuelingUplift !== 'null' ? req.body.fuelingUplift : 'NULL', 
-            req.body.fuelingTicket !== 'null' ? req.body.fuelingTicket : 'NULL', 
+            req.body.fuelingUplift !== 'null' ? req.body.fuelingUplift : null, 
+            req.body.fuelingTicket !== 'null' ? req.body.fuelingTicket : null, 
             boolToNumber(req.body.toiletService),
             boolToNumber(req.body.waterService),
-            req.body.remarks !== 'null' ? req.body.remarks : 'NULL', 
+            req.body.remarks !== 'null' ? req.body.remarks : null, 
             req.body.flightId
         ], (err, response) => {
             if (err) {
@@ -113,7 +113,7 @@ router.post("/createTrc", auth.authenticateRequest(52), multer().none(), async (
 
 // 52 is edit TRC tab so remove if needed
 router.post("/updateTrc", auth.authenticateRequest(52), multer().none(), async (req, res) => { // 52 is edit TRC tab so remove if needed
-    console.log(req.body)
+    //console.log(req.body)
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         // If there is a bad token, reject the request.
@@ -124,16 +124,16 @@ router.post("/updateTrc", auth.authenticateRequest(52), multer().none(), async (
         // console.log(req.body)
 
         connectionPool.query(config.queries.updateTrc, [
-            req.body.cabinCrewArrivalTime !== 'null' ? req.body.cabinCrewArrivalTime : 'NULL', 
+            req.body.cabinCrewArrivalTime !== 'null' ? req.body.cabinCrewArrivalTime : null, 
             boolToNumber(req.body.cateringEquipmentProcedureFollowed),
-            req.body.cateringOnloadTime !== 'null' ? req.body.cateringOnloadTime : 'NULL', 
-            req.body.cateringOffloadTime !== 'null' ? req.body.cateringOffloadTime : 'NULL', 
+            req.body.cateringOnloadTime !== 'null' ? req.body.cateringOnloadTime : null, 
+            req.body.cateringOffloadTime !== 'null' ? req.body.cateringOffloadTime : null, 
             boolToNumber(req.body.fuelingSafetyProcedureFollowed),
-            req.body.fuelingUplift !== 'null' ? req.body.fuelingUplift : 'NULL', 
-            req.body.fuelingTicket !== 'null' ? req.body.fuelingTicket : 'NULL', 
+            req.body.fuelingUplift !== 'null' ? req.body.fuelingUplift : null, 
+            req.body.fuelingTicket !== 'null' ? req.body.fuelingTicket : null, 
             boolToNumber(req.body.toiletService),
             boolToNumber(req.body.waterService),
-            req.body.remarks !== 'null' ? req.body.remarks : 'NULL', 
+            req.body.remarks !== 'null' ? req.body.remarks : null, 
             req.body.flightId
         ], (err, response) => {
             if (err) {
@@ -145,6 +145,39 @@ router.post("/updateTrc", auth.authenticateRequest(52), multer().none(), async (
         }); 
     })
 });
+
+/**
+ * Route that updates TRC on flight activity from the TRC Tab
+ */
+
+// 52 is edit TRC tab so remove if needed
+router.post("/updateTrcValueOnFlightActivity", auth.authenticateRequest(52), multer().none(), async (req, res) => { // 52 is edit TRC tab so remove if needed
+    //console.log('Value of update TRC');
+    //console.log(req.body)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        // console.log(req.body)
+
+        connectionPool.query(config.queries.updateTrcValueOnFlightActivity, [
+            req.body.newTrcValue,
+            req.body.fromParentId
+        ], (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            console.log(response)
+            return res.status(200).send(response[0]);
+        }); 
+    })
+});
+
+
 
 function boolToNumber(boolString) {
     tempBool = JSON.parse(boolString);
