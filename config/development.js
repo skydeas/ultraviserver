@@ -82,6 +82,7 @@ module.exports = {
         updateFlightActivityLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_activity SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
         updateFlightBufferLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_buffer SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
         deleteFlightActivityLegQuery: 'DELETE FROM ' + databaseName + '.flight_schedule_activity WHERE id=?',
+        updateTrcValueOnFlightActivity : 'UPDATE ' + databaseName + '.flight_schedule_activity SET flight_coordinator=? WHERE id=?',
         // ====== Additional Services Table ======
         selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
         selectAllAdditionalServicesWithFilter: `SELECT 
@@ -109,7 +110,19 @@ module.exports = {
         updateFis: 'UPDATE ' + databaseName + '.fis SET facility=?, airlineId=?, ac_Type=?, body_type=?, flight_number=?, scheduled_arrival_time=?, block_time=?, first_priority=?, last_priority=?, first_bag=?, last_bag=?, carrousel=?, remarks=? WHERE id = ?',
         getFisById: 'SELECT * FROM ' + databaseName + '.fis WHERE id = ?',
         deleteFisById: 'DELETE FROM ' + databaseName + '.fis WHERE id = ?',
-
+        // ====== TRC Table =======
+        getAllTrc: 'SELECT * FROM ' + databaseName + '.trc;',
+        getTrcByFlightId: 'SELECT * FROM ' + databaseName + '.trc WHERE flightId=?',
+        createTrc: 'INSERT INTO ' + databaseName + '.trc (cabinCrewArrivalTime, cateringEquipmentProcedureFollowed, cateringOnloadTime, cateringOffloadTime, fuelingSafetyProcedureFollowed, fuelingUplift, fuelingTicket, toiletService, waterService, remarks, flightId) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
+        updateTrc: 'UPDATE ' + databaseName + '.trc SET cabinCrewArrivalTime=?, cateringEquipmentProcedureFollowed=?, cateringOnloadTime=?, cateringOffloadTime=?, fuelingSafetyProcedureFollowed=?, fuelingUplift=?, fuelingTicket=?, toiletService=?, waterService=?, remarks=? WHERE flightId=?',
+        // ====== Pax Table =======
+        getAllPax: 'SELECT * FROM ' + databaseName + '.pax;',
+        // ====== Ramp Table =======a
+        getAllRamp: 'SELECT * FROM ' + databaseName + '.ramp;',
+        // ====== Cabin Table =======
+        getAllCabin: 'SELECT * FROM ' + databaseName + '.cabin;',
+        // ====== Security Table =======
+        getAllSecurity: 'SELECT * FROM ' + databaseName + '.security;',        
         // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
     },
     tokenMaxAge: ('2h'), // 2 hours
