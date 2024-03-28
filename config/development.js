@@ -124,6 +124,12 @@ module.exports = {
         // ====== Security Table =======
         getAllSecurity: 'SELECT * FROM ' + databaseName + '.security;',        
         // NOT BEING USED getFlightActivityDeparturesQuery: 'SELECT * FROM ' + databaseName + '.flight_schedule_rules WHERE ? BETWEEN date_start AND date_end AND ? = true AND departure_city = ?;',
+        // ====== Baggage Table =======
+        getAllBaggage: 'SELECT * FROM ' + databaseName + '.baggage;',
+        getBaggageByFlightId: 'SELECT * FROM ' + databaseName + '.baggage WHERE flightId=?',
+        createBaggage: 'INSERT INTO ' + databaseName + '.baggage (lob, rush, pax, bagRoom, ramp, carryOn, oversize, gate, remarks, flightId) VALUES (?,?,?,?,?,?,?,?,?,?);',
+        updateBaggage: 'UPDATE ' + databaseName + '.baggage SET lob=?, rush=?, pax=?, bagRoom=?, ramp=?, carryOn=?, oversize=?, gate=?, remarks=? WHERE flightId=?',
+        
     },
     tokenMaxAge: ('2h'), // 2 hours
     facilities: 

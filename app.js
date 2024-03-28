@@ -102,6 +102,9 @@ app.use('/api/cabin', require('./api/cabin'));
 
 app.use('/api/security', require('./api/security'));
 
+app.use('/api/baggage', require('./api/baggage'));
+
+
 //#region ============================ Authentication Region ===============================
 
 // Extracted the functionality of the route '/auth/isTokenValid' as a function so I can use it in other places.
