@@ -40,6 +40,88 @@ router.get("/getAllBaggage", auth.authenticateRequest(53), multer().none(), asyn
     })
 });
 
+// 53  is view Baggage tab so remove if needed
+router.post("/getAllBaggagePlusFlight", auth.authenticateRequest(53), multer().none(), async (req, res) => { // 53  is view Baggage tab so remove if needed
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        // Filter section. Filter being Undefined means we ignore it, filter being -1 means "All" 
+        // selection. So if something is -1 we set the this.xFilter to undefined
+        let airlineFilter = undefined;
+        let clientFilter = undefined;
+
+        if(req.body.airline !== '-1'){
+            this.airlineFilter = req.body.airline;
+        } else {
+            this.airlineFilter = undefined;
+        }
+
+        if(req.body.client !== '-1'){
+            this.clientFilter = req.body.client;
+        } else {
+            this.clientFilter = undefined;
+        }
+
+        // console.log(req.body)
+        const databaseName = 'ultravi_ulav';
+
+        let  getAllBaggagePlusFlight = `SELECT 
+                subquery.*, 
+                f.flight_number, 
+                f.airline, 
+                f.client, 
+                f.arrival_city, 
+                f.departure_city, 
+                f.scheduled_departure_time, 
+                f.scheduled_arrival_time,
+                (
+                    SELECT SUM(b.lob - b.rush) 
+                    FROM ${databaseName}.baggage b
+                    INNER JOIN ${databaseName}.flight_schedule_activity f ON b.flightId = f.id
+                    WHERE 
+                        CASE
+                            WHEN f.departure_city = '${POVCity}' THEN f.scheduled_departure_time
+                            ELSE f.scheduled_arrival_time
+                        END < subquery.timeOfImportance
+                        ${this.airlineFilter !== undefined ? `AND f.airline = '${this.airlineFilter}'` : ''}
+                        ${this.clientFilter !== undefined ? `AND f.client = '${this.clientFilter}'` : ''}
+                ) AS cumulative_balance_before_date
+            FROM (
+                SELECT 
+                    b.*, 
+                    -- Your other selected columns
+                    CASE
+                        WHEN f.departure_city = '${POVCity}' THEN f.scheduled_departure_time
+                        ELSE f.scheduled_arrival_time
+                    END AS timeOfImportance
+                FROM ${databaseName}.baggage b
+                INNER JOIN ${databaseName}.flight_schedule_activity f ON b.flightId = f.id
+                WHERE 
+                    f.date BETWEEN '${req.body.from}' AND '${req.body.until}'
+                    ${this.airlineFilter !== undefined ? `AND f.airline = '${this.airlineFilter}'` : ''}
+                    ${this.clientFilter !== undefined ? `AND f.client = '${this.clientFilter}'` : ''}
+            ) AS subquery
+            INNER JOIN ${databaseName}.flight_schedule_activity f ON subquery.flightId = f.id
+            ORDER BY subquery.timeOfImportance ASC;
+            `;
+
+        connectionPool.query(getAllBaggagePlusFlight, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            return res.status(200).send(response);
+        }); 
+    })
+});
+
+
 /**
  * Route that retrieves TRC by flight Id
  */

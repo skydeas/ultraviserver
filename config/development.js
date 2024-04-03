@@ -129,7 +129,7 @@ module.exports = {
         getBaggageByFlightId: 'SELECT * FROM ' + databaseName + '.baggage WHERE flightId=?',
         createBaggage: 'INSERT INTO ' + databaseName + '.baggage (lob, rush, pax, bagRoom, ramp, carryOn, oversize, gate, remarks, flightId) VALUES (?,?,?,?,?,?,?,?,?,?);',
         updateBaggage: 'UPDATE ' + databaseName + '.baggage SET lob=?, rush=?, pax=?, bagRoom=?, ramp=?, carryOn=?, oversize=?, gate=?, remarks=? WHERE flightId=?',
-        
+
     },
     tokenMaxAge: ('2h'), // 2 hours
     facilities: 
