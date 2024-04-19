@@ -29,7 +29,7 @@ router.post("/getTableSchema", multer().none(), async (req, res) => { // auth.au
 
         let getTableSchemaQuery = 
         `
-          SELECT COLUMN_NAME, DATA_TYPE 
+          SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE 
           FROM INFORMATION_SCHEMA.COLUMNS 
           WHERE TABLE_SCHEMA = '${constants.databaseName}' 
           AND TABLE_NAME = '${req.body.tableName}';
