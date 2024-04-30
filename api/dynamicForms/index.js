@@ -48,6 +48,33 @@ router.post("/getTableSchema", multer().none(), async (req, res) => { // auth.au
 });
 
 /**
+ * Route that returns the schema of a table.
+ */
+router.post("/getTable", multer().none(), async (req, res) => { // auth.authenticateRequest(44)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        let getTableSchemaQuery = 
+        `SELECT * FROM ${constants.databaseName}.${req.body.tableName};`
+        // console.log(getTableSchemaQuery)
+        //  [req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,]
+        connectionPool.query(getTableSchemaQuery, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            console.log(response);
+            res.status(200).send({message: 'success', response: response});
+        }); 
+    })
+});
+
+/**
  * Route that creates an add statement for the database based on the schema
  */
 router.post("/dynamicAdd", express.json(), async (req, res) => { // auth.authenticateRequest(44) multer().none(),
@@ -109,6 +136,33 @@ router.post("/getDropdownOptions", multer().none(), async (req, res) => { // aut
         // console.log(getTableSchemaQuery)
         //  [req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,]
         connectionPool.query(getTableSchemaQuery, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            console.log(response);
+            res.status(200).send({message: 'success', response: response});
+        }); 
+    })
+});
+
+/**
+ * Route that returns the names of all tables in the databse. 
+ * FILTERED IN THE SERVER SIDE TO PREVENT MALICIOUS ACCCESS TO SENSITIVE TABLES.
+ */
+router.get("/getTableNames", multer().none(), async (req, res) => { // auth.authenticateRequest(44)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+        let query = `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '${constants.databaseName}';`
+
+        console.log(query)
+        //  [req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,]
+        connectionPool.query(query, (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 return res.status(500).send({ message: 'Internal Server Error' });
