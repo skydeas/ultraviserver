@@ -18,33 +18,49 @@ const connectionPool = mysql.connectionPool;
 /**
  * Route that returns the schema of a table.
  */
-router.post("/getTableSchema", multer().none(), async (req, res) => { // auth.authenticateRequest(44)
-    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+router.post("/getTableSchema", multer().none(), async (req, res) => {
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
-        // If there is a bad token, reject the request.
         if (err || decoded == undefined) {
             return res.status(500).send({ message: 'Bad Token' });
-            
         }
 
+        // Query to fetch schema
         let getTableSchemaQuery = 
         `
-          SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE 
-          FROM INFORMATION_SCHEMA.COLUMNS 
-          WHERE TABLE_SCHEMA = '${constants.databaseName}' 
-          AND TABLE_NAME = '${req.body.tableName}';
-        `
-        // console.log(getTableSchemaQuery)
-        //  [req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,]
-        connectionPool.query(getTableSchemaQuery, (err, response) => {
-            if (err) {
-                console.log("Query Error: ", err);
+            SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = '${constants.databaseName}' 
+            AND TABLE_NAME = '${req.body.tableName}'
+            ORDER BY ORDINAL_POSITION;
+        `;
+
+        // Query to fetch count
+        let getCountQuery = `
+            SELECT COUNT(*) AS count 
+            FROM ${constants.databaseName}.${req.body.tableName};
+        `;
+
+        // Execute both queries
+        connectionPool.query(getTableSchemaQuery, (err1, schemaResponse) => {
+            if (err1) {
+                console.log("Schema Query Error: ", err1);
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
-            console.log(response);
-            res.status(200).send({message: 'success', response: response});
-        }); 
-    })
+
+            connectionPool.query(getCountQuery, (err2, countResponse) => {
+                if (err2) {
+                    console.log("Count Query Error: ", err2);
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+
+                // Return both schema and count as a single object
+                res.status(200).send({
+                    schema: schemaResponse,
+                    count: countResponse[0].count // Assuming countResponse is an array with a single object containing the count
+                });
+            });
+        });
+    });
 });
 
 /**
@@ -59,11 +75,13 @@ router.post("/getTable", multer().none(), async (req, res) => { // auth.authenti
             
         }
 
-        let getTableSchemaQuery = 
-        `SELECT * FROM ${constants.databaseName}.${req.body.tableName};`
+        let getTableQuery = 
+        `SELECT * 
+        FROM ${constants.databaseName}.${req.body.tableName}
+        LIMIT ${req.body.itemsPerPage} OFFSET ${req.body.pageOffset};`
         // console.log(getTableSchemaQuery)
         //  [req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,]
-        connectionPool.query(getTableSchemaQuery, (err, response) => {
+        connectionPool.query(getTableQuery, (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 return res.status(500).send({ message: 'Internal Server Error' });
@@ -172,8 +190,6 @@ router.get("/getTableNames", multer().none(), async (req, res) => { // auth.auth
         }); 
     })
 });
-
-
 
 /** selectAllAdditionalServicesWithFilter
  *  Route to get a specific additional service using the flight id of the modal as the identifier.
