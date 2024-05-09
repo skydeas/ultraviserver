@@ -63,6 +63,37 @@ router.post("/getTableSchema", multer().none(), async (req, res) => {
     });
 });
 
+
+/**
+ * Route that returns the item from a table by id.
+ */
+router.post("/getItemFromTableById", multer().none(), async (req, res) => {
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+        }
+
+        // Construct the SQL query using parameterized query to prevent SQL injection
+        const query = `
+            SELECT *
+            FROM ${constants.databaseName}.${req.body.tableName}
+            WHERE id = ${req.body.id}
+        `;
+        
+        // Execute both queries
+        connectionPool.query(query, (err1, response) => {
+            if (err1) {
+                console.log("Schema Query Error: ", err1);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // Return both schema and count as a single object
+            res.status(200).send({message: 'success', response: response});
+        });
+    });
+});
+
+
 /**
  * Route that returns the schema of a table.
  */
