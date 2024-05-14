@@ -79,7 +79,7 @@ router.post("/getItemFromTableById", multer().none(), async (req, res) => {
             FROM ${constants.databaseName}.${req.body.tableName}
             WHERE id = ${req.body.id}
         `;
-        
+
         // Execute both queries
         connectionPool.query(query, (err1, response) => {
             if (err1) {
@@ -166,6 +166,44 @@ router.post("/dynamicAdd", express.json(), async (req, res) => { // auth.authent
             res.status(200).send({message: 'success', response: response});
         }); 
     })
+});
+
+/**
+ * Route that creates an update statement for the database based on the schema
+ */
+router.post("/dynamicUpdate", express.json(), async (req, res) => {
+    jwt.verify(req.headers.logintoken, config.privateKey, async (err, decoded) => {
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+        }
+
+        const filteredSchema = req.body.schema.filter(column => column.COLUMN_NAME !== 'id');
+        const columnNames = filteredSchema.map(column => column.COLUMN_NAME);
+
+        const updateColumns = columnNames.map(columnName => {
+            // Get the value from the form data
+            const value = req.body.formData[columnName];
+            // Convert null values to SQL NULL
+            const sqlValue = value === null ? 'NULL' : `'${value}'`;
+            // Return the column assignment string
+            return `${columnName} = ${sqlValue}`;
+        });
+
+        // Generate column assignments for SQL query
+        const updateColumnAssignments = updateColumns.join(', ');
+
+        // Construct the UPDATE query
+        const updateQuery = `UPDATE ${req.body.tableName} SET ${updateColumnAssignments} WHERE id = ${req.body.formData.id}`;
+
+        connectionPool.query(updateQuery, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            console.log(response);
+            res.status(200).send({ message: 'success', response: response });
+        });
+    });
 });
 
 /**
