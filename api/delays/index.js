@@ -233,8 +233,8 @@ router.post("/getDelaysWithFilter", auth.authenticateRequest(37), async (req, re
         d.code AS code,
         d.at_fault AS at_fault,
         d.remarks AS remarks,
-        a.airline as airlineId,
-        a.client as clientId,
+        a.airline as airline,
+        a.client as client,
         a.date,
         a.flight_number
       FROM

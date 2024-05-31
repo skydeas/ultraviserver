@@ -238,7 +238,7 @@ app.post('/auth/authenticateRequest', async function (req, res) {
         // console.log('Tasks Available: \n', results);
         // Check if our task_id passed in as a parameter matches and of the task_id that way we can authenticate
         for (let i = 0; i < results.length; i++) {
-            if (results[i].id === req.body.task_id) {
+            if (results[i].id === req.body.task) {
                 res.json({ 'response': true });
                 return;
             }

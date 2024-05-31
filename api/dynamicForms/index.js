@@ -227,7 +227,7 @@ router.post("/getDropdownOptions", multer().none(), async (req, res) => { // aut
                 console.log("Query Error: ", err);
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
-            console.log(response);
+            // console.log(response);
             res.status(200).send({message: 'success', response: response});
         }); 
     })
