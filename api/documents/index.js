@@ -287,7 +287,7 @@ router.get("/getDocuments", async (req, res) => {
                 // pull of all from the database LOL
 
                 for(let index = 0; index < config.documentationManuals.length; index ++){
-                    const foundTask = results.find(task => task.id === config.documentationManuals[index].task_id);
+                    const foundTask = results.find(task => task.id === config.documentationManuals[index].task);
                     if(foundTask){
                         filteredDocManuals.push(config.documentationManuals[index]);
                         if(firstItem){

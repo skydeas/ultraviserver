@@ -136,15 +136,25 @@ router.post("/dynamicAdd", express.json(), async (req, res) => { // auth.authent
         }
         // Filter out the 'id' column from the schema
         const filteredSchema = req.body.schema.filter(column => column.COLUMN_NAME !== 'id');
-        // Extract column names from schema
+        // Extract column names and non-nullable status from schema
         const columnNames = filteredSchema.map(column => column.COLUMN_NAME);
+        const nonNullableColumns = filteredSchema.filter(column => column.IS_NULLABLE === 'NO').map(column => column.COLUMN_NAME);
 
         // Extract values from formData
         const values = columnNames.map(columnName => {
             // If formData value is empty string, replace it with NULL
-            const value = req.body.formData[columnName] === '' ? 'NULL' : `'${req.body.formData[columnName]}'`;
+            const value = req.body.formData[columnName] === '' ? null : req.body.formData[columnName];
             return value;
         });
+
+        // Check for null values in non-nullable fields
+        const nullErrorFields = nonNullableColumns.filter(columnName => values[columnNames.indexOf(columnName)] === null);
+        if (nullErrorFields.length > 0) {
+            return res.status(400).send({ 
+                message: 'Null values attempted in non-nullable fields',
+                fields: nullErrorFields 
+            });
+        }
 
         // Generate column names string for SQL query
         const columnsString = columnNames.join(', ');
@@ -178,7 +188,25 @@ router.post("/dynamicUpdate", express.json(), async (req, res) => {
         }
 
         const filteredSchema = req.body.schema.filter(column => column.COLUMN_NAME !== 'id');
+        // Extract column names and non-nullable status from schema
         const columnNames = filteredSchema.map(column => column.COLUMN_NAME);
+        const nonNullableColumns = filteredSchema.filter(column => column.IS_NULLABLE === 'NO').map(column => column.COLUMN_NAME);
+
+        // Extract values from formData
+        const values = columnNames.map(columnName => {
+            // If formData value is empty string, replace it with NULL
+            const value = req.body.formData[columnName] === '' ? null : req.body.formData[columnName];
+            return value;
+        });
+
+        // Check for null values in non-nullable fields
+        const nullErrorFields = nonNullableColumns.filter(columnName => values[columnName.indexOf(columnName)] === null);
+        if (nullErrorFields.length > 0) {
+            return res.status(400).send({ 
+                message: 'Null values attempted in non-nullable fields',
+                fields: nullErrorFields 
+            });
+        }
 
         const updateColumns = columnNames.map(columnName => {
             // Get the value from the form data
