@@ -140,12 +140,20 @@ router.post("/dynamicAdd", express.json(), async (req, res) => { // auth.authent
         const columnNames = filteredSchema.map(column => column.COLUMN_NAME);
         const nonNullableColumns = filteredSchema.filter(column => column.IS_NULLABLE === 'NO').map(column => column.COLUMN_NAME);
 
-        // Extract values from formData
+        // Generate column names string for SQL query
+        const columnsString = columnNames.join(', ');
+        
+        // Extract values from formData and ensure proper SQL formatting
         const values = columnNames.map(columnName => {
-            // If formData value is empty string, replace it with NULL
-            const value = req.body.formData[columnName] === '' ? null : req.body.formData[columnName];
-            return value;
+            const value = req.body.formData[columnName];
+            if (value === '' || value === null || value === undefined) {
+                return 'NULL';
+            } else {
+                return `'${value.replace(/'/g, "''")}'`; // Escape single quotes in values
+            }
         });
+
+        console.log(values);
 
         // Check for null values in non-nullable fields
         const nullErrorFields = nonNullableColumns.filter(columnName => values[columnNames.indexOf(columnName)] === null);
@@ -156,16 +164,12 @@ router.post("/dynamicAdd", express.json(), async (req, res) => { // auth.authent
             });
         }
 
-        // Generate column names string for SQL query
-        const columnsString = columnNames.join(', ');
-
-        // Generate values string for SQL query
-        const valuesString = values.join(', ');
-
+        const insertQuery = `INSERT INTO ${config.databaseName}.${req.body.tableName} (${columnsString}) VALUES (${values})`;
+        console.log(insertQuery);
         // Construct the INSERT query
-        const insertQuery = `INSERT INTO ${req.body.tableName} (${columnsString}) VALUES (${valuesString})`;
+        // const insertQuery = `INSERT INTO ${req.body.tableName} (${columnsString}) VALUES (${valuesString})`;
 
-        // console.log(getTableSchemaQuery)
+         console.log(insertQuery)
         //  [req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,]
         connectionPool.query(insertQuery, (err, response) => {
             if (err) {
@@ -251,6 +255,34 @@ router.post("/getDropdownOptions", multer().none(), async (req, res) => { // aut
         // console.log(getTableSchemaQuery)
         //  [req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,]
         connectionPool.query(getTableSchemaQuery, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+            // console.log(response);
+            res.status(200).send({message: 'success', response: response});
+        }); 
+    })
+});
+
+/**
+ * Route that returns the data of a table.
+ */
+router.post("/dynamicDelete", multer().none(), async (req, res) => { // auth.authenticateRequest(44)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        let deleteItemQuery =
+
+        `DELETE FROM ${constants.databaseName}.${req.body.tableName} WHERE (id = ${req.body.itemId})`
+        console.log(deleteItemQuery)
+        //  [req.body.remarks !== 'null' && req.body.remarks !== '' ? req.body.remarks : null,]
+        connectionPool.query(deleteItemQuery, (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);
                 return res.status(500).send({ message: 'Internal Server Error' });
