@@ -393,7 +393,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
                         (
                             id,
                             '-', 
-                            (DATEDIFF(FROM_UNIXTIME(${dateToGenerate}), FROM_UNIXTIME(date_start)))
+                            ${dateToGenerate}
                         ) as generated_id, 
                     ${dateToGenerate} as date, 
                     airline, 
@@ -421,15 +421,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
                     next_leg_pointer IS NOT NULL, 
                     CONCAT(
                         inner_queryDate.next_leg_pointer, 
-                        '-',
-                        (
-                        SELECT 
-                            (DATEDIFF(FROM_UNIXTIME(${dateToGenerate}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
-                        FROM 
-                            ultravi_ulav.flight_schedule_rules t 
-                        WHERE 
-                            t.id = inner_queryDate.next_leg_pointer
-                        )
+                        '-',${dateToGenerate}
                     ), 
                     NULL
                     ) AS next_leg_pointer 
