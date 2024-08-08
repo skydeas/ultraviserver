@@ -7,7 +7,6 @@ const nodemailer = require('nodemailer');
 const databaseName = 'ultravi_ulav';
 
 
-
 // Production specific configuration
 // =================================
 module.exports = {
@@ -166,9 +165,9 @@ module.exports = {
     }),
     mailerName: 'do-not-reply@ultravi.com',
     // Day length of flight activity
-    flightActivityLength: 2,
+    flightActivityLength: 2,    // Must also be changed in the front-end if we want to alter!!!
     // Day length of flight buffer
-    flightBufferLength: 14
+    flightBufferLength: 14      // Must also be changed in the front-end if we want to alter!!!
 };
 
 
