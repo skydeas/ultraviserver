@@ -1493,7 +1493,7 @@ router.post("/getFlightDataForStaffing", multer().none(), async (req, res) => { 
         `;
 
         let columnsToSelect = `
-            airline, client, ac_type, flight_number, next_leg_pointer, arrival_city, departure_city, scheduled_arrival_time, scheduled_departure_time
+            airline, client, ac_type, flight_number, next_leg_pointer, arrival_city, departure_city, scheduled_arrival_time, scheduled_departure_time, generated_id
         `;
 
         // Query to get data from flight_schedule_activity and flight_buffer tables
