@@ -1184,6 +1184,10 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
                 }
         
                 console.log('Update Successful:', updateResults);
+
+                const dataToAppend = { action: 'Created Flight Leg', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), insertId: lastId, requestBody: req.body };
+                const arrayName = 'flightActivity'; // Name of the array in the JSON file
+                logger.writeToLogFile(dataToAppend, arrayName);
                 // return res.status(200).send({ message: 'Insert and Update Successful' });
                 return res.status(200).send(updateResults);
             });
@@ -1262,6 +1266,11 @@ router.post("/deleteFlightLeg", multer().none(), async (req, res) => { // , if y
                                     });
                                 }
                                 connection.release(); // Release the connection
+
+                                const dataToAppend = { action: 'Deleted Flight Leg', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+                                const arrayName = 'flightActivity'; // Name of the array in the JSON file
+                                logger.writeToLogFile(dataToAppend, arrayName);
+
                                 res.status(200).send(result);
                             });
                         });
