@@ -140,13 +140,15 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
 
             // Rule has been updated, we must now edit the buffer.
             // FOR MVP we will delete all buffer flights and re-create them.
-            connectionPool.query(`DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '?-%';`, 
+            connectionPool.query(`DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '${parseInt(req.body.form_id,10)}-%';`, 
                 [parseInt(req.body.form_id,10)], async (err, response) => {
                     if (err) {
                         console.log("Query Error: ", err);
                         // responseSent = true;
                         return res.status(500).send({ message: 'Internal Server Error' });
                     }
+
+                    // console.log(`DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '${parseInt(req.body.form_id,10)}-%';`);
 
                     // Log that a user has updated a rule:
                     const dataToAppend = { action: 'updated rule', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
