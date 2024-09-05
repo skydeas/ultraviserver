@@ -104,6 +104,9 @@ app.use('/api/security', require('./api/security'));
 
 app.use('/api/baggage', require('./api/baggage'));
 
+app.use('/api/dynamicForms', require('./api/dynamicForms'));
+
+
 
 //#region ============================ Authentication Region ===============================
 
@@ -235,7 +238,7 @@ app.post('/auth/authenticateRequest', async function (req, res) {
         // console.log('Tasks Available: \n', results);
         // Check if our task_id passed in as a parameter matches and of the task_id that way we can authenticate
         for (let i = 0; i < results.length; i++) {
-            if (results[i].id === req.body.task_id) {
+            if (results[i].id === req.body.task) {
                 res.json({ 'response': true });
                 return;
             }
@@ -390,7 +393,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
                         (
                             id,
                             '-', 
-                            (DATEDIFF(FROM_UNIXTIME(${dateToGenerate}), FROM_UNIXTIME(date_start)))
+                            ${dateToGenerate}
                         ) as generated_id, 
                     ${dateToGenerate} as date, 
                     airline, 
@@ -418,15 +421,7 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
                     next_leg_pointer IS NOT NULL, 
                     CONCAT(
                         inner_queryDate.next_leg_pointer, 
-                        '-',
-                        (
-                        SELECT 
-                            (DATEDIFF(FROM_UNIXTIME(${dateToGenerate}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
-                        FROM 
-                            ultravi_ulav.flight_schedule_rules t 
-                        WHERE 
-                            t.id = inner_queryDate.next_leg_pointer
-                        )
+                        '-',${dateToGenerate}
                     ), 
                     NULL
                     ) AS next_leg_pointer 

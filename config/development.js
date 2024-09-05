@@ -7,7 +7,6 @@ const nodemailer = require('nodemailer');
 const databaseName = 'ultravi_ulav';
 
 
-
 // Production specific configuration
 // =================================
 module.exports = {
@@ -36,11 +35,11 @@ module.exports = {
         addTaskQuery : 'INSERT INTO ' + databaseName + '.tasks (description) VALUES (?);',
         // ====== Role-Tasks Table ======
         selectAllRolesTasksQuery : 'SELECT * FROM ' + databaseName + '.roles_tasks',
-        selectAllRolesTasksByIdQuery : 'SELECT * FROM ' + databaseName + '.roles_tasks WHERE role_id=?',
+        selectAllRolesTasksByIdQuery : 'SELECT * FROM ' + databaseName + '.roles_tasks WHERE role=?',
         // ====== User-Roles Table ======
-        selectUserRolesById : 'SELECT * FROM ' + databaseName + '.users_roles WHERE user_id=?',
+        selectUserRolesById : 'SELECT * FROM ' + databaseName + '.users_roles WHERE user=?',
         // ====== Authentication Queries ======
-        allTasksAvailableToUserById : 'SELECT tasks.* FROM tasks JOIN roles_tasks ON tasks.id = roles_tasks.task_id JOIN roles ON roles_tasks.role_id = roles.id JOIN users_roles ON roles.id = users_roles.role_id JOIN users ON users_roles.user_id = users.id WHERE users.id =?;',
+        allTasksAvailableToUserById : 'SELECT tasks.* FROM tasks JOIN roles_tasks ON tasks.id = roles_tasks.task JOIN roles ON roles_tasks.role = roles.id JOIN users_roles ON roles.id = users_roles.role JOIN users ON users_roles.user = users.id WHERE users.id =?;',
         // ====== Documents Table ======
         selectAllDocumentsQuery : 'SELECT * FROM ' + databaseName + '.documents',
         addDocumentQuery : 'INSERT INTO ' + databaseName + '.documents (seq, docname, pnom, title, ver, active, effective, updated) VALUES (?,?,?,?,?,?,?,?);',
@@ -68,7 +67,7 @@ module.exports = {
         updateClientQuery : 'UPDATE ' + databaseName + '.clients SET shortName=?,legalName=?,type=?,address=?,city=?,state=?,zip=?,country=? WHERE id=?',
         deleteClientQuery : 'DELETE FROM ' + databaseName + '.clients WHERE id=?',
         // ac type
-        selectAllAc_typesQuery: 'SELECT * FROM ' + databaseName + '.ac_type ORDER BY name;',
+        selectAllAc_typesQuery: 'SELECT * FROM ' + databaseName + '.ac_types ORDER BY name;',
         // ====== Password Resert Tokens Table ======
         selectAllPasswordResetTokensQuery : 'SELECT * FROM ' + databaseName + '.account_recovery_tokens',
         addPasswordResetTokenQuery : 'INSERT INTO ' + databaseName + '.account_recovery_tokens (expiration, user_email) VALUES (?,?);',
@@ -86,15 +85,15 @@ module.exports = {
         // ====== Additional Services Table ======
         selectAllAdditionalServices : 'SELECT * FROM ' + databaseName + '.additional_services',
         selectAllAdditionalServicesWithFilter: `SELECT 
-                s.id, s.clientId, s.airlineId, s.serviceId, s.date, s.timeStart, s.timeEnd, s.flightId, s.remarks, s.equipmentId, s.isComplete, s.locationStart, s.locationEnd, s.quantity, a.flight_number 
+                s.id, s.client, s.airline, s.service, s.date, s.timeStart, s.timeEnd, s.flightId, s.remarks, s.equipmentId, s.isComplete, s.locationStart, s.locationEnd, s.quantity, a.flight_number 
             FROM 
                 ${databaseName}.additional_services s 
             LEFT JOIN 
                 ultravi_ulav.flight_schedule_activity a ON s.flightId = a.id 
             WHERE 
         s.date BETWEEN ? AND ?`,
-        addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (clientId, airlineId, serviceId, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);',
-        updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET clientId=?, airlineId=?, serviceId=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=?, quantity=? WHERE id=?',
+        addAdditionalService : 'INSERT INTO ' + databaseName + '.additional_services (client, airline, service, date, timeStart, timeEnd, flightId, remarks, equipmentId, isComplete, locationStart, locationEnd, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);',
+        updateAdditionalService: 'UPDATE ' + databaseName + '.additional_services SET client=?, airline=?, service=?, date=?, timeStart=?, timeEnd=?, flightId=?, remarks=?, equipmentId=?, isComplete=?, locationStart=?, locationEnd=?, quantity=? WHERE id=?',
         deleteAdditionalService: 'DELETE FROM ' + databaseName + '.additional_services WHERE id=?',
         deleteAdditionalServiceByFlightId: 'DELETE FROM ' + databaseName + '.additional_services WHERE flightId=?',
         // ====== Services Table ======
@@ -145,12 +144,12 @@ module.exports = {
     ],
     // Array of objects for the manuals (different sections) in our database. If needed we can make this a database object.
     documentationManuals: [
-        {categoryName: "Employee Handbook", docname: "EH", task_id: 11},
-        {categoryName: "General Operations Manual", docname: "GOM", task_id: 12},
-        {categoryName: "General Operations Manual Forms", docname: "GOMF", task_id: 13},
-        {categoryName: "Dangerous Goods Regulations", docname: "DGR", task_id: 14},
-        {categoryName: "Airport Manuals & Guides", docname: "KMANUALS", task_id: 15},
-        {categoryName: "Safety Bulletins", docname: "SFTB", task_id: 16},
+        {categoryName: "Employee Handbook", docname: "EH", task: 11},
+        {categoryName: "General Operations Manual", docname: "GOM", task: 12},
+        {categoryName: "General Operations Manual Forms", docname: "GOMF", task: 13},
+        {categoryName: "Dangerous Goods Regulations", docname: "DGR", task: 14},
+        {categoryName: "Airport Manuals & Guides", docname: "KMANUALS", task: 15},
+        {categoryName: "Safety Bulletins", docname: "SFTB", task: 16},
     ],
     mail_transporter : nodemailer.createTransport({
         host: 'mail.ultravi.com',
@@ -166,9 +165,9 @@ module.exports = {
     }),
     mailerName: 'do-not-reply@ultravi.com',
     // Day length of flight activity
-    flightActivityLength: 2,
+    flightActivityLength: 2,    // Must also be changed in the front-end if we want to alter!!!
     // Day length of flight buffer
-    flightBufferLength: 14
+    flightBufferLength: 14      // Must also be changed in the front-end if we want to alter!!!
 };
 
 

@@ -28,8 +28,8 @@ router.post("/createAirline", auth.authenticateRequest(24),  multer().none(), as
         }
         connectionPool.query(config.queries.addAirlineQuery, 
         [
-            req.body.formName,
-            req.body.formCode
+            req.body.name,
+            req.body.code
         ], (err, response) => {
             if (err) {
                 console.log("Query Error: ", err);

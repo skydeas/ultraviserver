@@ -11,7 +11,7 @@ module.exports = {
      * We verify that the user making the request has the task assigned to them to ensure
      * that they can perform this request
      */
-     authenticateRequest(task_id) {
+     authenticateRequest(task) {
         return function (req, res, next) {
             // console.log(req.headers.logintoken);
 
@@ -67,8 +67,8 @@ module.exports = {
                             return res.status(500).send({ message: 'Internal Server Error' });
                         }
 
-                        // Check if our task_id parameter matches any of the task_ids returned by the query
-                        const foundTask = results.find(task => task.id === task_id);
+                        // Check if our _task parameter matches any of the task returned by the query
+                        const foundTask = results.find(_task => _task.id === task);
                         if (foundTask) {
                             // Task is authorized, move on to the next middleware
                             next();
