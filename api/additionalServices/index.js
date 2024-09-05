@@ -169,7 +169,6 @@ router.get("/getAdditionalServicesInDateRange", auth.authenticateRequest(31),  a
  */ 
 router.post("/getAdditionalServicesWithFilter",  async (req, res) => { //REMOVED:  auth.authenticateRequest(31)
     let responseSent = false;
-
     // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
     jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
         if (err || decoded == undefined) {
@@ -177,7 +176,7 @@ router.post("/getAdditionalServicesWithFilter",  async (req, res) => { //REMOVED
             return res.status(500).send({ message: 'Bad Token' });
             
         }
-        connectionPool.query(config.queries.selectAllAdditionalServicesWithFilter + `${(req.body.airlineSearchQuery === "-1" ? "" : " AND airlineId = " + parseInt(req.body.airlineSearchQuery, 10))}` + `${(req.body.clientSearchQuery === "-1" ? "" : " AND clientId = " + parseInt(req.body.clientSearchQuery, 10))}`,
+        connectionPool.query(config.queries.selectAllAdditionalServicesWithFilter + `${(req.body.airlineSearchQuery === "-1" ? "" : " AND s.airline = " + parseInt(req.body.airlineSearchQuery, 10))}` + `${(req.body.clientSearchQuery === "-1" ? "" : " AND s.client = " + parseInt(req.body.clientSearchQuery, 10))}`,
             [
                 req.body.selectedStartDate,
                 req.body.selectedEndDate
