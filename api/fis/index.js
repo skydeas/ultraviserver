@@ -189,8 +189,10 @@ router.post("/getFisListWithFilter", auth.authenticateRequest(43), async (req, r
         (
           ( f.scheduled_arrival_time BETWEEN ${req.body.selectedStartDate} AND ${req.body.selectedEndDate})
         )
-        ${req.body.airlineSearchQuery !== "-1" ? ` AND f.airline = ${parseInt(req.body.airlineSearchQuery, 10)}` : ""}
-        ${req.body.clientSearchQuery !== "-1" ? ` AND f.client = ${parseInt(req.body.clientSearchQuery, 10)}` : ""};
+        ${req.body.airlineSearchQuery !== "-1" ? ` AND f.airlineId = ${parseInt(req.body.airlineSearchQuery, 10)}` : ""}
+        ${req.body.clientSearchQuery !== "-1" ? ` AND f.clientId = ${parseInt(req.body.clientSearchQuery, 10)}` : ""}
+        ORDER BY scheduled_arrival_time asc
+        ;
     `;
   
     connectionPool.query(query, (err, response) => {
