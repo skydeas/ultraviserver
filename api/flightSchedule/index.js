@@ -140,15 +140,17 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
 
             // Rule has been updated, we must now edit the buffer.
             // FOR MVP we will delete all buffer flights and re-create them.
-            connectionPool.query(`DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '${parseInt(req.body.form_id,10)}-%';`, 
-                [parseInt(req.body.form_id,10)], async (err, response) => {
+            let deleteBufferFlightsQuery = `DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '${parseInt(req.body.form_id,10)}-%';`
+            // console.log(`DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '${parseInt(req.body.form_id,10)}-%';`);
+            console.log(deleteBufferFlightsQuery);
+            connectionPool.query(deleteBufferFlightsQuery, async (err, response) => {
                     if (err) {
                         console.log("Query Error: ", err);
                         // responseSent = true;
                         return res.status(500).send({ message: 'Internal Server Error' });
                     }
-
-                    // console.log(`DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '${parseInt(req.body.form_id,10)}-%';`);
+                    console.log('Inside the query to delete buffer flights.');
+                    
 
                     // Log that a user has updated a rule:
                     const dataToAppend = { action: 'updated rule', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
@@ -157,9 +159,11 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
                     logger.writeToLogFile(dataToAppend, arrayName);
 
                     // Now that we have deleted the flights from the buffer, let's re-create them!
-            
+                    console.log('\n\n before fillBufferOnRuleCreation');
                     // Add flights to buffer (if necessary.) // We are ignoring the flight activity and updating only the buffer, not today and tomorrow
                     await fillBufferOnRuleCreation(req.body, parseInt(req.body.form_id,10), true);
+                    console.log('\n\n after fillBufferOnRuleCreation');
+
 
                     // console.log(response);
                     return res.status(200).send(response);
@@ -179,7 +183,6 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
  */
 async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = false){
     const secondsPerDay = 86400;
-
     // Today and tomorrow variables used to determine when is flight activty
     // ===== If we want to extend the activity to more days we need today and tomorrow variables + after tomorrow and so on ======
     let today = moment.utc().startOf('day').unix(); //Date is start of day in UTC (00:00:00)
@@ -200,83 +203,63 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
     }
 
     
-    console.log('today ', today)
-    console.log('startOfRule ', startOfRule)
-    console.log('endOfRule ', endOfRule)
+    // console.log('today ', today)
+    // console.log('startOfRule ', startOfRule)
+    // console.log('endOfRule ', endOfRule)
     //console.log('firstDayOfBuffer ', firstDayOfBuffer)
     //console.log('lastDayOfBuffer ', lastDayOfBuffer)
 
+    // Get a connection from the pool
+    connection = await new Promise((resolve, reject) => {
+        connectionPool.getConnection((err, conn) => {
+            if (err) return reject(err);
+            resolve(conn);
+        });
+    });
+    
+    // Begin the transaction
+    await new Promise((resolve, reject) => {
+        connection.beginTransaction(err => {
+            if (err) return reject(err);
+            resolve();
+        });
+    });
 
-    // This for loop is for today + tomorrow, and the length of the  buffer!
-    // As of 10/4/2023, today and tomorrow are the flight activity; The next 14 days are buffer; anything after is rules.
-    for(i; i <= (config.flightActivityLength + config.flightBufferLength); i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
-        console.log('We are in the for loop, index: ', i);
-        let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
-        let databaseName = '';
-        const localTimezoneOffset = Math.abs((moment(dayOfForLoop * 1000).utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
-        const dayOfWeek = moment((dayOfForLoop + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
+    try {
+        //console.log('try');
+        // This for loop is for today + tomorrow, and the length of the  buffer!
+        // As of 10/4/2023, today and tomorrow are the flight activity; The next 14 days are buffer; anything after is rules.
+        for(i; i <= (config.flightActivityLength + config.flightBufferLength); i++){ // Changed to 16 to fix the issue with the flight at the end of buffer not being created.
+            //console.log('We are in the for loop, index: ', i);
+            let dayOfForLoop = today + (i * secondsPerDay); // Today + 14
+            let databaseName = '';
+            const localTimezoneOffset = Math.abs((moment(dayOfForLoop * 1000).utcOffset() / 60)); // It comes out to -4 originally, so i took the math.abs of the number
+            const dayOfWeek = moment((dayOfForLoop + ((secondsPerDay / 24) * localTimezoneOffset ))* 1000).format('dddd').toLowerCase(); // Add 4 hours to timezone
 
-        // console.log('today: ', today);
-        console.log('dayOfForLoop: ', dayOfForLoop);
-        console.log('dayOfWeek: ', dayOfWeek);
+            // console.log('today: ', today);
+            //console.log('dayOfForLoop: ', dayOfForLoop);
+            //console.log('dayOfWeek: ', dayOfWeek);
 
-        // Check current day of for loop is within contract start / end, if not, return.
-        if(dayOfForLoop >= startOfRule && dayOfForLoop <= endOfRule){
-            // I dislike nested for loops but we use this to check the layered conditions needed for insertion into activity / buffer.
-            // ATTENTION! Since mark wanted the flight activity to also include tomorrow, we are also including tomorrow in flight activity!
-            if(dayOfForLoop == today || dayOfForLoop == tomorrow){
-                console.log('dayOfForLoop is in activity')
-                databaseName = 'ultravi_ulav.flight_schedule_activity';
+            // Check current day of for loop is within contract start / end, if not, return.
+            if(dayOfForLoop >= startOfRule && dayOfForLoop <= endOfRule){
+                // I dislike nested for loops but we use this to check the layered conditions needed for insertion into activity / buffer.
+                // ATTENTION! Since mark wanted the flight activity to also include tomorrow, we are also including tomorrow in flight activity!
+                if(dayOfForLoop == today || dayOfForLoop == tomorrow){
+                    //console.log('dayOfForLoop is in activity')
+                    databaseName = 'ultravi_ulav.flight_schedule_activity';
+                } else{
+                    //console.log('dayOfForLoop is in buffer')
+                    databaseName = 'ultravi_ulav.flight_schedule_buffer';
+                }
             } else{
-                console.log('dayOfForLoop is in buffer')
-                databaseName = 'ultravi_ulav.flight_schedule_buffer';
+                // dayOfForLoop is outside the rules so we should just return
+                //console.log('dayOfForLoop is NOT in the buffer or activity')
+                continue;
             }
-        } else{
-            // dayOfForLoop is outside the rules so we should just return
-            console.log('dayOfForLoop is NOT in the buffer or activity')
-            continue;
-        }
-    
-        let connection;
-    
-        try {
-            // Get a connection from the pool
-            connection = await new Promise((resolve, reject) => {
-                connectionPool.getConnection((err, conn) => {
-                    if (err) return reject(err);
-                    resolve(conn);
-                });
-            });
-            
-            // Begin the transaction
-            await new Promise((resolve, reject) => {
-                connection.beginTransaction(err => {
-                    if (err) return reject(err);
-                    resolve();
-                });
-            });
-    
+
             // Assuming referenceId is passed in the request body
             const referenceId = parseInt(insertId, 10);
-    
-            // Step 1: Find the highest index for the given reference ID
-            const [rows] = await new Promise((resolve, reject) => {
-                connection.query(`
-                    SELECT IFNULL(MAX(CAST(SUBSTRING_INDEX(generated_id, '-', -1) AS UNSIGNED)), 0) AS currentMaxIndex
-                    FROM ${databaseName}
-                    WHERE generated_id LIKE CONCAT(?, '-%')
-                `, [referenceId], (err, results) => {
-                    if (err) return reject(err);
-                    resolve(results);
-                });
-            });
 
-            console.log(rows)
-
-            const currentMaxIndex = rows.currentMaxIndex;
-            const newIndex = currentMaxIndex + 1;
-            const newGeneratedId = `${referenceId}-${newIndex}`;
-            console.log(newGeneratedId);
             // Step 2: Insert the new row with the generated unique ID
             const query = `
                 INSERT INTO ${databaseName}(
@@ -313,7 +296,7 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
             const staTime = moment(ruleForm.formScheduled_arrival_time, 'HH:mm');
             const stdTime = moment(ruleForm.formScheduled_departure_time, 'HH:mm');
 
-    
+
             const values = [
                 parseInt(ruleForm.form_ac_type, 10),
                 parseInt(ruleForm.formAirline, 10),
@@ -329,157 +312,183 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
                 // newGeneratedId Ignoring the new generated ID above and doing just our test of ID-DATE
                 `${referenceId}-${dayOfForLoop}` // This is id-datestamp
             ];
-            console.log(query);
-            console.log(values);
+            // console.log(query);
+            // console.log(values);
 
-            await new Promise((resolve, reject) => {
-                connection.query(query, values, (err, results) => {
-                    if (err) return reject(err);
-                    resolve(results);
-                });
-            });
+            // Check if it is a day of week in which we need to perform this operation.
 
+            // Construct the key for req.body, such as 'formMonday', 'formTuesday', etc.
+            const formDayOfWeekKey = `form${dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1)}`;
 
-            // Step 3: Commit the transaction
-            await new Promise((resolve, reject) => {
-                connection.commit(err => {
-                    if (err) return reject(err);
-                    resolve();
-                });
-            });
+            // Check if the value in req.body for that day is "1"
+            if (ruleForm[formDayOfWeekKey] === "1") {
+                //console.log('\n\n\n INSIDE TRUE FOR DAY OF WEEK \n\n\n');
+                //console.log('formDayOfWeekKey: ', formDayOfWeekKey);
+                //console.log('ruleForm: ', ruleForm);
 
-            // res.send('Transaction committed successfully.');-- NOT an HTTP Call yet, fixing soon.
-        } catch (err) {
-            // Rollback the transaction in case of an error
-            if (connection) {
+                console.log(query);
+                // The current day is marked as true in req.body
+
+                // Add the current query into 
                 await new Promise((resolve, reject) => {
-                    connection.rollback(() => {
-                        resolve();
+                    connection.query(query, values, (err, results) => {
+                        if (err) return reject(err);
+                        resolve(results);
                     });
                 });
             }
-            console.error('Transaction failed, rolled back.', err);
 
-            // res.status(500).send('Transaction failed, rolled back.'); -- NOT an HTTP Call yet, fixing soon.
+            // let generateAndInsertLegsQuery = 
+            //     `
+            //     INSERT INTO ${databaseName}(
+            //     generated_id, date, airline, client, 
+            //     remarks, flight_number, scheduled_arrival_time, 
+            //     scheduled_departure_time, arrival_city, 
+            //     departure_city, next_leg_pointer, 
+            //     ac_type, flightStatus)
+            //         (
+            //         SELECT 
+            //             queryDateInside.generated_id, 
+            //             queryDateInside.date, 
+            //             queryDateInside.airline, 
+            //             queryDateInside.client, 
+            //             queryDateInside.remarks, 
+            //             queryDateInside.flight_number, 
+            //             queryDateInside.scheduled_arrival_time, 
+            //             queryDateInside.scheduled_departure_time, 
+            //             queryDateInside.arrival_city, 
+            //             queryDateInside.departure_city, 
+            //             queryDateInside.next_leg_pointer, 
+            //             queryDateInside.ac_type,
+            //             1
+            //         FROM 
+            //             (
+            //             SELECT 
+            //                 id, 
+            //                 date_start,
+            //                 CONCAT
+            //                     (
+            //                         id,
+            //                         '-', 
+            //                         (DATEDIFF(FROM_UNIXTIME(${dayOfForLoop}), FROM_UNIXTIME(date_start)))
+            //                     ) as generated_id, 
+            //                 ${dayOfForLoop} as date, 
+            //                 airline, 
+            //                 client, 
+            //                 remarks, 
+            //                 flight_number, 
+            //                 (
+            //                 ${dayOfForLoop} + (
+            //                     HOUR(scheduled_departure_time) * 3600
+            //                 ) + (
+            //                     MINUTE(scheduled_departure_time) * 60
+            //                 )
+            //                 ) as scheduled_departure_time, 
+            //                 (
+            //                 ${dayOfForLoop} + (
+            //                     HOUR(scheduled_arrival_time) * 3600
+            //                 ) + (
+            //                     MINUTE(scheduled_arrival_time) * 60
+            //                 ) + (sta_offset * 86400)
+            //                 ) as scheduled_arrival_time, 
+            //                 arrival_city, 
+            //                 departure_city, 
+            //                 ac_type, 
+            //                 IF(
+            //                 next_leg_pointer IS NOT NULL, 
+            //                 CONCAT(
+            //                     inner_queryDate.next_leg_pointer, 
+            //                     '-',
+            //                     (
+            //                     SELECT 
+            //                         (DATEDIFF(FROM_UNIXTIME(${dayOfForLoop}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
+            //                     FROM 
+            //                         ultravi_ulav.flight_schedule_rules t 
+            //                     WHERE 
+            //                         t.id = inner_queryDate.next_leg_pointer
+            //                     )
+            //                 ), 
+            //                 NULL
+            //                 ) AS next_leg_pointer 
+            //             FROM 
+            //                 (
+            //                 SELECT 
+            //                     * 
+            //                 FROM 
+            //                     ultravi_ulav.flight_schedule_rules 
+            //                 WHERE 
+            //                     (
+            //                     ${dayOfForLoop} + (
+            //                         HOUR(scheduled_departure_time) * 3600
+            //                     ) + (
+            //                         MINUTE(scheduled_departure_time) * 60
+            //                     ) BETWEEN date_start 
+            //                     AND date_end
+            //                     ) 
+            //                     AND ${dayOfWeek} = true
+            //                     AND id = ${insertId}
+            //                 ) as inner_queryDate
+            //             ) as queryDateInside 
+            //         )
+            //         `
+            //     // console.log('query: ', generateAndInsertLegsQuery);
+            //     // Insert new rules onto buffer in a single query.
+            //     connectionPool.query(generateAndInsertLegsQuery, (err, response) => {
+            //         if (err) {
+            //             console.log("Query Error: ", err);
+            //             throw err
+            //         }
 
-        } finally {
-            // Release the connection back to the pool
-            if (connection) {
-                connection.release();
-            }
+            //         // Log that a user has created a rule:
+            //         const dataToAppend = { action: 'Inserted Leg', username: 'SYSTEM', id: 'NaN', timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response};
+            //         const arrayName = 'flightActivity'; // Name of the array in the JSON file
+
+            //         logger.writeToLogFile(dataToAppend, arrayName);
+            
+            //         console.log(response)
+            //     });
         }
 
-        // let generateAndInsertLegsQuery = 
-        //     `
-        //     INSERT INTO ${databaseName}(
-        //     generated_id, date, airline, client, 
-        //     remarks, flight_number, scheduled_arrival_time, 
-        //     scheduled_departure_time, arrival_city, 
-        //     departure_city, next_leg_pointer, 
-        //     ac_type, flightStatus)
-        //         (
-        //         SELECT 
-        //             queryDateInside.generated_id, 
-        //             queryDateInside.date, 
-        //             queryDateInside.airline, 
-        //             queryDateInside.client, 
-        //             queryDateInside.remarks, 
-        //             queryDateInside.flight_number, 
-        //             queryDateInside.scheduled_arrival_time, 
-        //             queryDateInside.scheduled_departure_time, 
-        //             queryDateInside.arrival_city, 
-        //             queryDateInside.departure_city, 
-        //             queryDateInside.next_leg_pointer, 
-        //             queryDateInside.ac_type,
-        //             1
-        //         FROM 
-        //             (
-        //             SELECT 
-        //                 id, 
-        //                 date_start,
-        //                 CONCAT
-        //                     (
-        //                         id,
-        //                         '-', 
-        //                         (DATEDIFF(FROM_UNIXTIME(${dayOfForLoop}), FROM_UNIXTIME(date_start)))
-        //                     ) as generated_id, 
-        //                 ${dayOfForLoop} as date, 
-        //                 airline, 
-        //                 client, 
-        //                 remarks, 
-        //                 flight_number, 
-        //                 (
-        //                 ${dayOfForLoop} + (
-        //                     HOUR(scheduled_departure_time) * 3600
-        //                 ) + (
-        //                     MINUTE(scheduled_departure_time) * 60
-        //                 )
-        //                 ) as scheduled_departure_time, 
-        //                 (
-        //                 ${dayOfForLoop} + (
-        //                     HOUR(scheduled_arrival_time) * 3600
-        //                 ) + (
-        //                     MINUTE(scheduled_arrival_time) * 60
-        //                 ) + (sta_offset * 86400)
-        //                 ) as scheduled_arrival_time, 
-        //                 arrival_city, 
-        //                 departure_city, 
-        //                 ac_type, 
-        //                 IF(
-        //                 next_leg_pointer IS NOT NULL, 
-        //                 CONCAT(
-        //                     inner_queryDate.next_leg_pointer, 
-        //                     '-',
-        //                     (
-        //                     SELECT 
-        //                         (DATEDIFF(FROM_UNIXTIME(${dayOfForLoop}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
-        //                     FROM 
-        //                         ultravi_ulav.flight_schedule_rules t 
-        //                     WHERE 
-        //                         t.id = inner_queryDate.next_leg_pointer
-        //                     )
-        //                 ), 
-        //                 NULL
-        //                 ) AS next_leg_pointer 
-        //             FROM 
-        //                 (
-        //                 SELECT 
-        //                     * 
-        //                 FROM 
-        //                     ultravi_ulav.flight_schedule_rules 
-        //                 WHERE 
-        //                     (
-        //                     ${dayOfForLoop} + (
-        //                         HOUR(scheduled_departure_time) * 3600
-        //                     ) + (
-        //                         MINUTE(scheduled_departure_time) * 60
-        //                     ) BETWEEN date_start 
-        //                     AND date_end
-        //                     ) 
-        //                     AND ${dayOfWeek} = true
-        //                     AND id = ${insertId}
-        //                 ) as inner_queryDate
-        //             ) as queryDateInside 
-        //         )
-        //         `
-        //     // console.log('query: ', generateAndInsertLegsQuery);
-        //     // Insert new rules onto buffer in a single query.
-        //     connectionPool.query(generateAndInsertLegsQuery, (err, response) => {
-        //         if (err) {
-        //             console.log("Query Error: ", err);
-        //             throw err
-        //         }
+        // Step 3: Commit the transaction
+        await new Promise((resolve, reject) => {
+            connection.commit(err => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
 
-        //         // Log that a user has created a rule:
-        //         const dataToAppend = { action: 'Inserted Leg', username: 'SYSTEM', id: 'NaN', timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response};
-        //         const arrayName = 'flightActivity'; // Name of the array in the JSON file
+        // res.send('Transaction committed successfully.');-- NOT an HTTP Call yet, fixing soon.
+    }     
+    catch (err) {
+        //console.log('catch');
+        // Rollback the transaction in case of an error
+        if (connection) {
+            try {
+                await new Promise((resolve, reject) => {
+                    connection.rollback(err => {
+                        if (err) {
+                            return reject(err);
+                        }
+                        resolve();
+                    });
+                });
+                console.error('Transaction rolled back due to an error:', err);
+            } catch (rollbackErr) {
+                console.error('Rollback failed:', rollbackErr);
+            }
+        }
+        // Optional: throw or return to prevent further processing
+        throw err;
+        // res.status(500).send('Transaction failed, rolled back.'); -- NOT an HTTP Call yet, fixing soon.
 
-        //         logger.writeToLogFile(dataToAppend, arrayName);
-        
-        //         console.log(response)
-        //     });
+    } finally {
+        //console.log('Finally');
+        // Release the connection back to the pool
+        if (connection) {
+            console.log('releasing connection');
+            connection.release();
+        }
     }
-    //return res.status(200).send({'message': 'Added Rules to Buffer!'});
 }
 
 function calculateSeconds(timeString){
