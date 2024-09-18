@@ -263,9 +263,9 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
             // Step 2: Insert the new row with the generated unique ID
             const query = `
                 INSERT INTO ${databaseName}(
-                ac_type, airline, arrival_city, client, date, departure_city,  flight_number, next_leg_pointer, scheduled_arrival_time, scheduled_departure_time, flightStatus, generated_id
+                ac_type, airline, arrival_city, client, date, departure_city,  flight_number, next_leg_pointer, scheduled_arrival_time, scheduled_departure_time, flightStatus, generated_id, remarks
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
 
             // ===== Form from the front end. ====
@@ -310,7 +310,8 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
                 ruleForm.formScheduled_departure_time === '' ? null : (dayOfForLoop + (stdTime.hours() * 3600) + (stdTime.minutes() * 60)),
                 1, // Flight status 1 is on time.
                 // newGeneratedId Ignoring the new generated ID above and doing just our test of ID-DATE
-                `${referenceId}-${dayOfForLoop}` // This is id-datestamp
+                `${referenceId}-${dayOfForLoop}`, // This is id-datestamp
+                ruleForm.formRemarks
             ];
             // console.log(query);
             // console.log(values);
