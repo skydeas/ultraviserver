@@ -128,7 +128,8 @@ module.exports = {
         getBaggageByFlightId: 'SELECT * FROM ' + databaseName + '.baggage WHERE flightId=?',
         createBaggage: 'INSERT INTO ' + databaseName + '.baggage (lob, rush, pax, bagRoom, ramp, carryOn, oversize, gate, remarks, flightId) VALUES (?,?,?,?,?,?,?,?,?,?);',
         updateBaggage: 'UPDATE ' + databaseName + '.baggage SET lob=?, rush=?, pax=?, bagRoom=?, ramp=?, carryOn=?, oversize=?, gate=?, remarks=? WHERE flightId=?',
-
+        // ====== Safety Tables =======
+        createOpHazardForm: 'INSERT INTO ' + databaseName + '.operational_hazards_forms (name, employeeId, date, department, area, hazardCount, hazardTypeGroundEquipmentBoolean, hazardTypeHumanFactorBoolean, hazardTypeFacilityConditionsBoolean, hazardTypeEnvironmentConditionsBoolean, hazardTypeOtherBoolean, describeUndesiredRemarks, reccommendationsRemarks, additionalCommentsRemarks, lackOfEquipmentBoolean, innapropriateProtectiveEquipmentBoolean, groundEquipmentOtherBoolean, groundEquipmentIdNumber, lackOfPersonnelBoolean, scheduleOverloadedBoolean, RudenessOfCoworkerBoolean, humanFactorOtherBoolean) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);',
     },
     tokenMaxAge: ('2h'), // 2 hours
     facilities: 
