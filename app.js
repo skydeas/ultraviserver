@@ -106,6 +106,8 @@ app.use('/api/baggage', require('./api/baggage'));
 
 app.use('/api/dynamicForms', require('./api/dynamicForms'));
 
+app.use('/api/safety', require('./api/safety'));
+
 
 
 //#region ============================ Authentication Region ===============================
