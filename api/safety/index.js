@@ -56,8 +56,8 @@ router.post("/createOpHazardForm", auth.authenticateRequest(57), multer().none()
             }
 
             // Log that a user has created a rule:
-            const dataToAppend = { action: 'create FIS ', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, fisForm: req.body};
-            const arrayName = 'flightActivity'; // Name of the array in the JSON file
+            const dataToAppend = { action: 'Created Op Hazard Form', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), response: response, opHazardForm: req.body};
+            const arrayName = 'safety'; // Name of the array in the JSON file
 
             logger.writeToLogFile(dataToAppend, arrayName);
 
