@@ -5,6 +5,8 @@ const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
 const auth = require('../../auth');
 const multer = require('multer')
+const moment = require('moment');
+const logger = require('../../logger');
 
 //#region  ============================= Middlewares ==========================
 
@@ -36,6 +38,12 @@ router.post("/createAirline", auth.authenticateRequest(24),  multer().none(), as
                 responseSent = true;
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
+            // Log that a user has created an airline:
+            const dataToAppend = { action: 'create airline', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+            const arrayName = 'airlines'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
             // console.log(response);
             return res.status(200).send(response);
         });  
@@ -67,6 +75,12 @@ router.post("/updateAirline/:id", auth.authenticateRequest(24), multer().none(),
                 responseSent = true;
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
+            // Log that a user has updated an airline:
+            const dataToAppend = { action: 'update airline', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+            const arrayName = 'airlines'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
             // console.log(response);
             return res.status(200).send(response);
         });  
@@ -145,6 +159,12 @@ router.get("/deleteAirline/:id", auth.authenticateRequest(24), async (req, res) 
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
             // console.log(response);
+            // Log that a user has deleted an airline:
+            const dataToAppend = { action: 'delete airline', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body, requestParams: req.params };
+            const arrayName = 'airlines'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
             res.json(response);
         });  
     })   

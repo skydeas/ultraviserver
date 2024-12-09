@@ -142,14 +142,14 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
             // FOR MVP we will delete all buffer flights and re-create them.
             let deleteBufferFlightsQuery = `DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '${parseInt(req.body.form_id,10)}-%';`
             // console.log(`DELETE FROM ${config.databaseName}.flight_schedule_buffer WHERE generated_id LIKE '${parseInt(req.body.form_id,10)}-%';`);
-            console.log(deleteBufferFlightsQuery);
+            // console.log(deleteBufferFlightsQuery);
             connectionPool.query(deleteBufferFlightsQuery, async (err, response) => {
                     if (err) {
                         console.log("Query Error: ", err);
                         // responseSent = true;
                         return res.status(500).send({ message: 'Internal Server Error' });
                     }
-                    console.log('Inside the query to delete buffer flights.');
+                    // console.log('Inside the query to delete buffer flights.');
                     
 
                     // Log that a user has updated a rule:
@@ -159,10 +159,10 @@ router.post("/updateRule", auth.authenticateRequest(20), multer().none(), async 
                     logger.writeToLogFile(dataToAppend, arrayName);
 
                     // Now that we have deleted the flights from the buffer, let's re-create them!
-                    console.log('\n\n before fillBufferOnRuleCreation');
+                    // console.log('\n\n before fillBufferOnRuleCreation');
                     // Add flights to buffer (if necessary.) // We are ignoring the flight activity and updating only the buffer, not today and tomorrow
                     await fillBufferOnRuleCreation(req.body, parseInt(req.body.form_id,10), true);
-                    console.log('\n\n after fillBufferOnRuleCreation');
+                    // console.log('\n\n after fillBufferOnRuleCreation');
 
 
                     // console.log(response);
@@ -198,7 +198,7 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
 
     // If we want to only run this function for the buffer and NOT the flight activity, that's what this boolean is for. (Think editing rules.)
     if(ignoreActivity){
-        console.log('Setting Index to 2, Skipping Flight Activity.');
+        // console.log('Setting Index to 2, Skipping Flight Activity.');
         i=config.flightActivityLength;
     }
 
@@ -327,7 +327,9 @@ async function fillBufferOnRuleCreation(ruleForm, insertId, ignoreActivity = fal
                 //console.log('formDayOfWeekKey: ', formDayOfWeekKey);
                 //console.log('ruleForm: ', ruleForm);
 
-                console.log(query);
+                // ========= IMPORTANT ONE TO SHOW IT WORKS =>> console.log(query);
+
+
                 // The current day is marked as true in req.body
 
                 // Add the current query into 
@@ -1743,6 +1745,456 @@ router.post("/getFlightDataForStaffing", multer().none(), async (req, res) => { 
 });
 
 /**
+ * This function will create a virtualized view of the staffing crew, per department, for a selected timeframe
+ * taking into consideration that there might be already created crews. Ex: Needed 4, already created 1, 
+ * ==> Mark has requested filters for airline, client, and body type (of aircraft, lol)
+ * retrieve the 1 and virtualize 3.
+ */
+router.post("/virtualizeStaffingCrews", multer().none(), async (req, res) => { // , auth.authenticateRequest(22)
+    // FOR STAGE 1, PRE IMPLEMENTATION:
+    // 1) Just focus on virtualizing crews from defaults. 
+    // 2) Later we can check for contracts
+    // 3) Last we can implement checking for existing crews once table is created.
+    
+    /**
+     * For step 1:
+     * We need to receive: Department, Selected timeframe
+     * Departments are referenced from the department table on the front end.
+     */
+
+    // req.body.department, req.body.endTimestamp, req.body.startTimestamp,
+    console.log(req.body)
+    /*
+        {
+            startTimestamp: 1728878400,
+            endTimestamp: 1728964799,
+            department: 5,
+            isRequestLocal: true
+        }
+    */
+        // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access    to
+        jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+            // If there is a bad token, reject the request.
+            if (err || decoded == undefined) {
+                return res.status(500).send({ message: 'Bad Token' });
+            }
+    
+            // console.log(req.body)
+            // Filter section. Filter being Undefined means we ignore it, filter being -1 means "All" 
+            // selection. So if something is -1 we set the this.xFilter to undefined
+            let airlineFilter = undefined;
+            let clientFilter = undefined;
+    
+            if(req.body.airlineSearchQuery !== '-1'){
+                this.airlineFilter = req.body.airlineSearchQuery;
+            } else {
+                this.airlineFilter = undefined;
+            }
+    
+            if(req.body.clientSearchQuery !== '-1'){
+                this.clientFilter = req.body.clientSearchQuery;
+            } else {
+                this.clientFilter = undefined;
+            }
+    
+            let endOfToday; // Today is Today in the local system either UTC or LOCAL.
+    
+            if(req.body.isRequestLocal){
+                endOfToday = moment().endOf('day').unix();
+            } else {
+                endOfToday = moment().utc().endOf('day').unix();
+            }
+            // console.log('req.body.endTimestamp: ' + req.body.endTimestamp);
+            // console.log('endOfToday: ' + endOfToday)
+    
+            let endOfVisibleBuffer = endOfToday + (config.flightBufferLength * 86400);
+    
+            // console.log('endOfVisibleBuffer: ' + endOfVisibleBuffer);
+            let bufferEndTimestamp = req.body.endTimestamp;
+            if(req.body.endTimestamp > endOfVisibleBuffer){
+                console.log('inside if  if(req.body.endTimestamp > endOfVisibleBuffer){')
+                bufferEndTimestamp = endOfVisibleBuffer;
+                console.log('bufferEndTimestamp: ' + bufferEndTimestamp)
+            }
+    
+            let rulesStartTimestamp = req.body.startTimestamp;
+            if(req.body.startTimestamp <= endOfVisibleBuffer){
+                rulesStartTimestamp = endOfVisibleBuffer;
+            }
+    
+            // If endOfVisibleBuffer is less than either timestamp, we must generate those from the rules.
+            // Conditionally through SQL
+    
+            // console.log('bufferEndTimestamp: ' + bufferEndTimestamp);
+    
+    
+            // [       FA        ][        FB [/IGNORE/] FR          ] 
+            // Don't forget to get TOI in the query directly using POVCity
+    
+            // Define the common filter conditions
+            let filterConditions = `
+                ${this.airlineFilter !== undefined ? `AND airline = ${this.airlineFilter}` : ''}
+                ${this.clientFilter !== undefined ? `AND client = ${this.clientFilter}` : ''}
+            `;
+    
+            let columnsToSelect = `
+                airline, client, ac_type, flight_number, next_leg_pointer, arrival_city, departure_city, scheduled_arrival_time, scheduled_departure_time, generated_id
+            `;
+    
+            // Query to get data from flight_schedule_activity and flight_buffer tables
+            let query = `
+                SELECT 
+                    flight_query.airline,
+                    flight_query.client,
+                    flight_query.ac_type,
+                    flight_query.flight_number,
+                    flight_query.next_leg_pointer,
+                    flight_query.arrival_city,
+                    flight_query.departure_city,
+                    flight_query.scheduled_arrival_time,
+                    flight_query.scheduled_departure_time,
+                    flight_query.generated_id,
+                    flight_query.ac_type_name,
+                    flight_query.ac_type_category
+                FROM (
+                    SELECT 
+                        ${columnsToSelect},
+                        ac_types.name AS ac_type_name,  -- Add the ac_type_category field
+                        ac_types.ac_type_category AS ac_type_category  -- Add the ac_type_category field
+                    FROM (
+                        SELECT ${columnsToSelect} FROM ultravi_ulav.flight_schedule_activity 
+                        WHERE 
+                        (
+                            (arrival_city = '${POVCity}' AND scheduled_arrival_time BETWEEN ${req.body.startTimestamp} AND ${req.body.endTimestamp})
+                            OR 
+                            (departure_city = '${POVCity}' AND scheduled_departure_time BETWEEN ${req.body.startTimestamp} AND ${req.body.endTimestamp})
+                        )
+                        ${filterConditions}
+            `;
+            
+            // Check to see if we need to generate Buffer!
+            if( (req.body.startTimestamp >= (endOfToday + 86400) && req.body.startTimestamp <= (endOfToday + (86400 * config.flightBufferLength))) ||
+            (req.body.endTimestamp >= (endOfToday + 86400) && req.body.endTimestamp <= (endOfToday + (86400 * config.flightBufferLength)))){
+                console.log('butter')
+                query+=
+                `
+                UNION ALL
+                SELECT ${columnsToSelect} FROM ultravi_ulav.flight_schedule_buffer 
+                WHERE 
+                (
+                    (arrival_city = '${POVCity}' AND scheduled_arrival_time BETWEEN ${req.body.startTimestamp} AND ${bufferEndTimestamp})
+                    OR 
+                    (departure_city = '${POVCity}' AND scheduled_departure_time BETWEEN ${req.body.startTimestamp} AND ${bufferEndTimestamp})
+                )
+                ${filterConditions}
+                `
+            }
+            // Check if the timestamps exceed the endOfVisibleBuffer
+            if (req.body.endTimestamp > endOfVisibleBuffer || req.body.startTimestamp > endOfVisibleBuffer) {
+                console.log('req.body.startTimestamp: ' + req.body.startTimestamp);
+                console.log('req.body.endTimestamp: ' + req.body.endTimestamp);
+    
+                // Convert rulesStartTimestamp to a moment object
+                let startTimestampCopy = moment.unix(req.body.startTimestamp).utc();
+                console.log('startTimestampCopy: ' + startTimestampCopy);
+                // Start of the day in UTC
+                let startOfDay = startTimestampCopy.clone().startOf('day').unix();
+                console.log("Start of the day in UTC:", startOfDay); // Unix timestamp for 00:00 UTC of the selected date
+    
+                // End of the day in UTC
+                let endOfDay = startTimestampCopy.clone().endOf('day').unix();
+                console.log("End of the day in UTC:", endOfDay); // Unix timestamp for 23:59:59 UTC of the selected date
+    
+                // Get the DayOfWeek of startOfDay
+                // const dayOfWeekDay = moment().clone(endOfEndTimestamp).format('dddd').toLowerCase();
+                const dayOfWeekDay = moment(((startOfDay + endOfDay) / 2) * 1000).format('dddd').toLowerCase();
+    
+                console.log("dayOfWeekDay :", dayOfWeekDay); // Unix timestamp for 23:59:59 UTC of the selected date
+    
+                // Start of the next day in UTC
+                let startOfNextDay = startTimestampCopy.clone().add(1, 'day').startOf('day').unix();
+                console.log("Start of the next day in UTC:", startOfNextDay); // Unix timestamp for 00:00 UTC of the next day
+    
+                // End of the next day in UTC
+                let endOfNextDay = startTimestampCopy.clone().add(1, 'day').endOf('day').unix();
+                console.log("End of the next day in UTC:", endOfNextDay); // Unix timestamp for 23:59:59 UTC of the next day
+    
+                // Get the DayOfWeek of startOfNextDay
+                const dayOfWeekNextDay = moment(((startOfNextDay + endOfNextDay) / 2) * 1000).format('dddd').toLowerCase();
+                console.log("dayOfWeekNextDay :", dayOfWeekNextDay); // Unix timestamp for 23:59:59 UTC of the selected date
+    
+                let ruleQueryStartTimestamp = req.body.startTimestamp;
+                if(req.body.startTimestamp <= endOfVisibleBuffer){
+                    ruleQueryStartTimestamp = endOfVisibleBuffer;
+                }
+                
+                query += 
+                `
+                UNION ALL
+                SELECT ${columnsToSelect} FROM 
+                    (
+                        SELECT
+                            id, 
+                            date_start,
+                            CONCAT(
+                                id, 
+                                '-', 
+                                (DATEDIFF(FROM_UNIXTIME(${startOfDay}), FROM_UNIXTIME(date_start)))
+                            ) as generated_id, 
+                            ${startOfDay} as date, 
+                            airline, 
+                            client, 
+                            remarks, 
+                            flight_number, 
+                            (
+                                ${startOfDay} + (
+                                    HOUR(scheduled_departure_time) * 3600
+                                ) + (
+                                    MINUTE(scheduled_departure_time) * 60
+                                )
+                            ) as scheduled_departure_time, 
+                            (
+                                ${startOfDay} + (
+                                    HOUR(scheduled_arrival_time) * 3600
+                                ) + (
+                                    MINUTE(scheduled_arrival_time) * 60
+                                ) + (sta_offset * 86400)
+                            ) as scheduled_arrival_time, 
+                            arrival_city, 
+                            departure_city, 
+                            ac_type, 
+                            IF(
+                                next_leg_pointer IS NOT NULL, 
+                                CONCAT(
+                                    inner_queryDate.next_leg_pointer, 
+                                    '-',
+                                    (
+                                        SELECT 
+                                            (DATEDIFF(FROM_UNIXTIME(${startOfDay}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDate.date_start)))
+                                        FROM 
+                                            ultravi_ulav.flight_schedule_rules t 
+                                        WHERE 
+                                            t.id = inner_queryDate.next_leg_pointer
+                                    )
+                                ), 
+                                NULL
+                            ) AS next_leg_pointer 
+                        FROM 
+                            (
+                                SELECT 
+                                    * 
+                                FROM 
+                                    ultravi_ulav.flight_schedule_rules 
+                                WHERE 
+                                    (
+                                        ${startOfDay} + (
+                                            HOUR(scheduled_departure_time) * 3600
+                                        ) + (
+                                            MINUTE(scheduled_departure_time) * 60
+                                        )
+                                    ) BETWEEN date_start 
+                                    AND date_end
+                                    AND ${dayOfWeekDay} = true
+                            ) as inner_queryDate
+                        UNION ALL
+                            SELECT
+                                id, 
+                                date_start,
+                                CONCAT(
+                                    id, 
+                                    '-', 
+                                    (DATEDIFF(FROM_UNIXTIME(${startOfNextDay}), FROM_UNIXTIME(date_start)))
+                                ) as generated_id, 
+                                ${startOfNextDay} as date, 
+                                airline, 
+                                client, 
+                                remarks, 
+                                flight_number, 
+                                (
+                                    ${startOfNextDay} + (
+                                        HOUR(scheduled_departure_time) * 3600
+                                    ) + (
+                                        MINUTE(scheduled_departure_time) * 60
+                                    )
+                                ) as scheduled_departure_time, 
+                                (
+                                    ${startOfNextDay} + (
+                                        HOUR(scheduled_arrival_time) * 3600
+                                    ) + (
+                                        MINUTE(scheduled_arrival_time) * 60
+                                    ) + (sta_offset * 86400)
+                                ) as scheduled_arrival_time, 
+                                arrival_city, 
+                                departure_city, 
+                                ac_type, 
+                                IF(
+                                    next_leg_pointer IS NOT NULL, 
+                                    CONCAT(
+                                        inner_queryDateNextDay.next_leg_pointer, 
+                                        '-',
+                                        (
+                                            SELECT 
+                                                (DATEDIFF(FROM_UNIXTIME(${startOfNextDay}), FROM_UNIXTIME(t.date_start)))  + (DATEDIFF(FROM_UNIXTIME(t.date_start), FROM_UNIXTIME(inner_queryDateNextDay.date_start)))
+                                            FROM 
+                                                ultravi_ulav.flight_schedule_rules t 
+                                            WHERE 
+                                                t.id = inner_queryDateNextDay.next_leg_pointer
+                                        )
+                                    ), 
+                                    NULL
+                                ) AS next_leg_pointer 
+                            FROM 
+                                (
+                                    SELECT 
+                                        * 
+                                    FROM 
+                                        ultravi_ulav.flight_schedule_rules 
+                                    WHERE 
+                                        (
+                                            ${startOfNextDay} + (
+                                                HOUR(scheduled_departure_time) * 3600
+                                            ) + (
+                                                MINUTE(scheduled_departure_time) * 60
+                                            )
+                                        ) BETWEEN date_start 
+                                        AND date_end
+                                        AND ${dayOfWeekNextDay} = true
+                                ) as inner_queryDateNextDay
+                    ) as finalQuery
+                    WHERE 
+                    (
+                        (arrival_city = '${POVCity}' AND scheduled_arrival_time BETWEEN ${ruleQueryStartTimestamp} AND ${req.body.endTimestamp})
+                        OR 
+                        (departure_city = '${POVCity}' AND scheduled_departure_time BETWEEN ${ruleQueryStartTimestamp} AND ${req.body.endTimestamp})
+                    )
+                `
+            }
+
+            query += 
+            `
+                ) AS main_query
+                LEFT JOIN 
+                    ultravi_ulav.ac_types
+                ON 
+                    main_query.ac_type = ac_types.id
+            ) as flight_query;
+            `
+
+            /*
+
+                SELECT *
+                FROM ultravi_ulav.client_employee_positions_defaults
+                WHERE employee_position IN (
+                    SELECT id
+                    FROM ultravi_ulav.employee_positions
+                    WHERE department = 4
+                ) AND 
+                    ac_type_category = 2
+                ;
+
+
+                ==== results ===
+
+                # id	employee_position	agents	hours	ac_type_category
+                36	    36	                2	    1	    2
+                37	    37	                1	    1	    2
+
+                from the flight i need:
+                    -STA
+                    -STD
+                    -ID / GEN_ID
+                    -ac_type_category
+                    -AIRLINE
+                    -CLIENT
+
+                {
+                    airline: 15,
+                    client: '62',
+                    ac_type: 60,
+                    flight_number: '1718',
+                    next_leg_pointer: null,
+                    arrival_city: 'MIA',
+                    departure_city: 'HAV',
+                    scheduled_arrival_time: '1730392200',
+                    scheduled_departure_time: '1730388600',
+                    generated_id: '1490-1730332800',
+                    ac_type_name: 'E-190',
+                    ac_type_category: 1
+                },
+                {
+                    airline: 19,
+                    client: '35',
+                    ac_type: 28,
+                    flight_number: '957',
+                    next_leg_pointer: '1514-1730332800',
+                    arrival_city: 'MIA',
+                    departure_city: 'ARN',
+                    scheduled_arrival_time: '1730414700',
+                    scheduled_departure_time: '1730375100',
+                    generated_id: '1513-1730332800',
+                    ac_type_name: 'A330-300',
+                    ac_type_category: 4
+                },
+  
+                SELECT
+                    airline, client, ac_type, flight_number, next_leg_pointer, arrival_city, departure_city, scheduled_arrival_time, scheduled_departure_time, generated_id,
+                    ac_types.name AS ac_type_name,  -- Add the ac_type_category field
+                    ac_types.ac_type_category AS ac_type_category  -- Add the ac_type_category field
+                FROM (
+                    SELECT
+                airline, client, ac_type, flight_number, next_leg_pointer, arrival_city, departure_city, scheduled_arrival_time, scheduled_departure_time, generated_id
+                FROM ultravi_ulav.flight_schedule_activity
+                    WHERE
+                    (
+                        (arrival_city = 'MIA' AND scheduled_arrival_time BETWEEN 1730347200 AND 1730433599)
+                        OR
+                        (departure_city = 'MIA' AND scheduled_departure_time BETWEEN 1730347200 AND 1730433599)
+                    )
+                ) AS main_query
+                LEFT JOIN
+                ultravi_ulav.ac_types
+                ON
+                main_query.ac_type = ac_types.id;
+
+
+                =========== Query to get the Employee_pos_defaults from department and ac_type_category: ====
+
+                SELECT 
+                    * 
+                FROM
+                    (
+                        SELECT 
+                            * 
+                        FROM 
+                            ultravi_ulav.employee_positions
+                        WHERE 
+                            department = 2
+                    ) as employee_position_query
+                LEFT JOIN
+                    ultravi_ulav.client_employee_positions_defaults
+                ON
+                    employee_position_query.id = client_employee_positions_defaults.employee_position
+                WHERE 
+                    ac_type_category = 2
+
+            */
+    
+    
+            console.log('Query: ', query);
+            
+            connectionPool.query(query, (err, response) => {
+                if (err) {
+                    console.log("Query Error: ", err);
+                    return res.status(500).send({ message: 'Internal Server Error' });
+                }
+    
+                console.log(response);
+                return res.status(200).send(response);
+            }); 
+        })
+});
+
+/**
  * This function will be called whenever we add any item to flight buffer or activity.
  * It will check for the existence of the permutation of airline, client, and ac_type (Check for ALL permutations and add missing ones from defaults.)
  * 
@@ -1761,6 +2213,36 @@ router.post("/getFlightDataForStaffing", multer().none(), async (req, res) => { 
 function checkPermutation(){
     
 }
+
+
+/**
+ * Route that retrieves all of the departments from the database
+ * 
+ * NOT THE CORRECT PLACE for this api endpoint however it is used for flight satffing initially
+ * so untill we make an api endpoint for this, we will just leave this endpoint in this file.
+ */
+router.get("/getDepartments", async (req, res) => { //, auth.authenticateRequest(55)
+    // Check if the user is logged in, and if his token is valid, If so, find all tasks they have access
+    jwt.verify(req.headers.logintoken, config.privateKey, (err, decoded) => {
+        // If there is a bad token, reject the request.
+        if (err || decoded == undefined) {
+            return res.status(500).send({ message: 'Bad Token' });
+            
+        }
+
+        let query = `SELECT * FROM ultravi_ulav.departments ORDER BY displayOrder asc;`
+        //console.log('Query: ', query);
+        connectionPool.query(query, (err, response) => {
+            if (err) {
+                console.log("Query Error: ", err);
+                return res.status(500).send({ message: 'Internal Server Error' });
+            }
+
+            // console.log(response);
+            return res.status(200).send(response);
+        }); 
+    })
+});
 
 function getUtcOffsetInHours() {
     let utcOffset = (Math.abs(moment().utcOffset()) / 60);

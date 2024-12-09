@@ -5,6 +5,8 @@ const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
 const auth = require('../../auth');
 const multer = require('multer')
+const moment = require('moment');
+const logger = require('../../logger');
 
 //#region  ============================= Middlewares ==========================
 
@@ -43,6 +45,13 @@ router.post("/createClient", auth.authenticateRequest(30),  multer().none(), asy
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
             // console.log(response);
+
+            // Log that a user has created a client:
+            const dataToAppend = { action: 'create client', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+            const arrayName = 'clients'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
             return res.status(200).send(response);
         });  
     })
@@ -80,6 +89,14 @@ router.post("/updateClient/:id", auth.authenticateRequest(30), multer().none(), 
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
             // console.log(response);
+
+            // Log that a user has updated a client:
+            const dataToAppend = { action: 'update client', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+            const arrayName = 'clients'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
+
             return res.status(200).send(response);
         });  
     })
@@ -157,6 +174,13 @@ router.get("/deleteClient/:id", auth.authenticateRequest(30), async (req, res) =
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
             // console.log(response);
+
+            // Log that a user has deleted a client:
+            const dataToAppend = { action: 'delete client', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body, requestParams: req.params };
+            const arrayName = 'clients'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
             res.json(response);
         });  
     })   

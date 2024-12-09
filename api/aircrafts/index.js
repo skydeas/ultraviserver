@@ -5,6 +5,9 @@ const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
 const auth = require('../../auth');
 const multer = require('multer')
+const moment = require('moment');
+const logger = require('../../logger');
+
 
 //#region  ============================= Middlewares ==========================
 
@@ -35,8 +38,20 @@ router.post("/createAircraft", auth.authenticateRequest(26),  multer().none(), a
             if (err) {
                 console.log("Query Error: ", err);
                 responseSent = true;
+                // Handle duplicate key 
+                if (err.code === 'ER_DUP_ENTRY') {
+                    return res.status(409).send({ message: 'Duplicate entry detected', details: err.sqlMessage });
+                } 
+            
+                // Generic error handling
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
+            // Log that a user has created an aircraft:
+            const dataToAppend = { action: 'create aircraft', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+            const arrayName = 'aircrafts'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
             // console.log(response);
             return res.status(200).send(response);
         });  
@@ -69,6 +84,12 @@ router.post("/updateAircraft/:id", auth.authenticateRequest(26), multer().none()
                 responseSent = true;
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
+
+            // Log that a user has updated an aircraft:
+            const dataToAppend = { action: 'update aircraft', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body };
+            const arrayName = 'aircrafts'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
             // console.log(response);
             return res.status(200).send(response);
         });  
@@ -171,6 +192,15 @@ router.get("/deleteAircraft/:id", auth.authenticateRequest(26), async (req, res)
                 responseSent = true;
                 return res.status(500).send({ message: 'Internal Server Error' });
             }
+            
+            // Log that a user has deleted an aircraft:
+            const dataToAppend = { action: 'delete aircraft', username: decoded._username, id: decoded._id, timestamp: moment().unix(), readableTimestamp:moment.unix(Date.now() / 1000).format('YYYY-MM-DD HH:mm:ss'), requestBody: req.body, requestParams: req.params };
+            const arrayName = 'aircrafts'; // Name of the array in the JSON file
+
+            logger.writeToLogFile(dataToAppend, arrayName);
+
+
+
             // console.log(response);
             res.json(response);
         });  
