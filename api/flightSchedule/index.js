@@ -1216,6 +1216,7 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
         } else if(req.body.origin == 'buffer'){
             databaseName = 'ultravi_ulav.flight_schedule_buffer';
         }
+        const escapedRemarks = connectionPool.escape(req.body.remarks);
 
         connectionPool.query(
             `UPDATE ${databaseName} SET 
@@ -1234,7 +1235,7 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
                 gate=${req.body.gate !== 'null' ? `'${req.body.gate}'` : 'NULL'}, 
                 next_leg_pointer=${req.body.next_leg_pointer !== 'null' ? `'${req.body.next_leg_pointer}'` : 'NULL'}, 
                 pax=${req.body.pax}, 
-                remarks='${req.body.remarks}', 
+                remarks=${escapedRemarks}, 
                 scheduled_arrival_time=${req.body.scheduled_arrival_time}, 
                 scheduled_departure_time=${req.body.scheduled_departure_time}, 
                 wheelchair_count=${req.body.wheelchair_count !== 'null' && req.body.wheelchair_count !== '' ? `'${req.body.wheelchair_count}'` : 'NULL'},
@@ -1281,6 +1282,7 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
 
         let databaseName = 'ultravi_ulav.flight_schedule_activity';
         let tablename = 'flight_schedule_activity';
+        const escapedRemarks = connectionPool.escape(req.body.remarks);
 
         let query = `
         INSERT INTO ${databaseName}
@@ -1301,7 +1303,7 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
             ${req.body.gate !== 'null' ? `'${req.body.gate}'` : 'NULL'}, 
             ${req.body.next_leg_pointer !== 'null' && req.body.next_leg_pointer !== undefined ? `'${req.body.next_leg_pointer}'` : 'NULL'}, 
             ${req.body.pax !== 'null' && req.body.pax !== '' ? `'${req.body.pax}'` : 'NULL'},
-            '${req.body.remarks}', 
+            ${escapedRemarks}, 
             ${req.body.scheduled_arrival_time === '' ? 'NULL' : req.body.scheduled_arrival_time}, 
             ${req.body.scheduled_departure_time === '' ? 'NULL' : req.body.scheduled_departure_time},
             ${req.body.wheelchair_count !== 'null' && req.body.wheelchair_count !== '' ? `'${req.body.wheelchair_count}'` : 'NULL'},
