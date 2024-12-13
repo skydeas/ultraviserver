@@ -466,8 +466,8 @@ cron.schedule('0 2 * * *', () => {  // Minute, hour, day of month (1-31), month 
     // Move TODAY to flight Activity:
     let copyFromBufferToActivityQuery = 
         `INSERT INTO ultravi_ulav.flight_schedule_activity 
-        (date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time, actual_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type, ac_reg, gate, pax, wheelchair_count, isSubservice, flightStatus, lastUpdatedUserId, lastUpdatedTimestamp, flight_coordinator)
-        SELECT date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time,  actual_departure_time, arrival_city,departure_city,next_leg_pointer, ac_type, ac_reg, gate, pax, wheelchair_count, isSubservice, flightStatus, lastUpdatedUserId, lastUpdatedTimestamp,  flight_coordinator
+        (date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time, actual_departure_time, arrival_city, departure_city,next_leg_pointer,ac_type, ac_reg, gate, pax, wheelchair_count, isSubservice, flightStatus, lastUpdatedUserId, lastUpdatedTimestamp, flight_coordinator, inf, avih)
+        SELECT date, generated_id, airline, client, remarks, flight_number, scheduled_arrival_time, scheduled_departure_time, estimated_arrival_time, actual_arrival_time, estimated_departure_time,  actual_departure_time, arrival_city,departure_city,next_leg_pointer, ac_type, ac_reg, gate, pax, wheelchair_count, isSubservice, flightStatus, lastUpdatedUserId, lastUpdatedTimestamp,  flight_coordinator, inf, avih
         FROM ultravi_ulav.flight_schedule_buffer
         WHERE date <= ${today.clone().add(1,'days').unix()}`;
 

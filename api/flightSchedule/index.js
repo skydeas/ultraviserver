@@ -1246,7 +1246,9 @@ router.post("/updateFlightLeg", multer().none(), async (req, res) => { // , auth
                 flight_coordinator=${req.body.flight_coordinator !== 'null' ? `'${req.body.flight_coordinator}'` : 'NULL'},
                 pier=${req.body.pier !== 'null' ? `'${req.body.pier}'` : 'NULL'},
                 lob=${req.body.lob !== 'null' && req.body.lob !== '' ? `'${req.body.lob}'` : 'NULL'},
-                rush=${req.body.rush !== 'null' && req.body.rush !== '' ? `'${req.body.rush}'` : 'NULL'}
+                rush=${req.body.rush !== 'null' && req.body.rush !== '' ? `'${req.body.rush}'` : 'NULL'},
+                inf=${req.body.inf !== 'null' && req.body.inf !== '' ? `'${req.body.inf}'` : 'NULL'},
+                avih=${req.body.avih !== 'null' && req.body.avih !== '' ? `'${req.body.avih}'` : 'NULL'}
             WHERE id=${req.body.id}`, 
         (err, response) => {
             if (err) {
@@ -1286,7 +1288,7 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
 
         let query = `
         INSERT INTO ${databaseName}
-        (ac_type, actual_arrival_time, actual_departure_time, ac_reg, airline, arrival_city, client, date, departure_city, estimated_arrival_time, estimated_departure_time, flight_number, gate, next_leg_pointer, pax, remarks, scheduled_arrival_time, scheduled_departure_time, wheelchair_count, isSubservice, flightStatus, generated_id)
+        (ac_type, actual_arrival_time, actual_departure_time, ac_reg, airline, arrival_city, client, date, departure_city, estimated_arrival_time, estimated_departure_time, flight_number, gate, next_leg_pointer, pax, remarks, scheduled_arrival_time, scheduled_departure_time, wheelchair_count, isSubservice, flightStatus, inf, avih, generated_id)
         SELECT
             ${parseInt(req.body.ac_type, 10)}, 
             ${req.body.actual_arrival_time === '' ? 'NULL' : req.body.actual_arrival_time},
@@ -1309,6 +1311,8 @@ router.post("/createFlightLeg", multer().none(), async (req, res) => { // , auth
             ${req.body.wheelchair_count !== 'null' && req.body.wheelchair_count !== '' ? `'${req.body.wheelchair_count}'` : 'NULL'},
             ${req.body.isSubservice !== 'null' && req.body.isSubservice !== undefined ? `'${req.body.isSubservice}'` : 'NULL'}, 
             ${req.body.flightStatus},
+            ${req.body.inf !== 'null' && req.body.inf !== '' ? `'${req.body.inf}'` : 'NULL'},
+            ${req.body.avih !== 'null' && req.body.avih !== '' ? `'${req.body.avih}'` : 'NULL'},
             NULL;
         SELECT LAST_INSERT_ID() as lastId;
         `;

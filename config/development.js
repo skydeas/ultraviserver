@@ -78,8 +78,12 @@ module.exports = {
         createFlightScheduleRuleQuery: 'INSERT INTO ' + databaseName + '.flight_schedule_rules (recurring, date_start, date_end, airline, client, remarks, flight_number, flight_number_out, scheduled_arrival_time, scheduled_departure_time, arrival_city, departure_city, monday, tuesday, wednesday, thursday, friday, saturday, sunday, ac_type, sta_offset) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);',
         updateFlightScheduleRuleQuery: `UPDATE ${databaseName}.flight_schedule_rules SET recurring = ?, date_start = ?, date_end = ?, airline = ?, client = ?, remarks = ?, flight_number = ?, flight_number_out = ?, scheduled_arrival_time = ?, scheduled_departure_time = ?, arrival_city = ?, departure_city = ?, monday = ?, tuesday = ?, wednesday = ?, thursday = ?, friday = ?, saturday = ?, sunday = ?, ac_type = ?, sta_offset = ?, next_leg_pointer =? WHERE id = ?;`,
         // ====== Flight Activity / Buffer Rules Table ======
+        
+        // --vv-- As of 12/12/2024 The below query is not currently used as the API endpoint creates its own query.
         updateFlightActivityLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_activity SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
+        // --vv-- As of 12/12/2024 The below query is not currently used as the API endpoint creates its own query.
         updateFlightBufferLegQuery : 'UPDATE ' + databaseName + '.flight_schedule_buffer SET ac_type=?, actual_arrival_time=?, actual_departure_time=?, ac_reg=?, airline=?, arrival_city=?, client=?, date=?, departure_city=?, estimated_arrival_time=?, estimated_departure_time=?, flight_number=?, gate=?, next_leg_pointer=?, pax=?, remarks=?, scheduled_arrival_time=?, scheduled_departure_time=?, wheelchair_count=? WHERE id=?',
+        
         deleteFlightActivityLegQuery: 'DELETE FROM ' + databaseName + '.flight_schedule_activity WHERE id=?',
         updateTrcValueOnFlightActivity : 'UPDATE ' + databaseName + '.flight_schedule_activity SET flight_coordinator=? WHERE id=?',
         // ====== Additional Services Table ======
