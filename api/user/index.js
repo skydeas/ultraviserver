@@ -199,14 +199,32 @@ router.post("/deleteUser", async (req, res) => {
 
 
 /**
- * API Route to retrieve a specific user from the database as a JSON object
+ * API Route to retrieve all active flight coordinators.
+ * 
+ * Active flight coordinators are for selecting in the application, as we only want to be able to appoint Active Coordinators
+ * 
  * Asynchronously handles the query to the database thanks to using the connection pool,
  * the pool.query method is a shrotcut since it handles the connection.release() for us, we
  * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
  */
-router.get("/getFlightCoordinators", async (req, res) => {
+router.get("/getActiveFlightCoordinators", async (req, res) => {
+    let flightCoordinators = await connectionPool.promise().execute(config.queries.selectActiveflightCoordinatorsQuery);
+    res.json(flightCoordinators[0]);
+});
+
+/**
+ * API Route to retrieve all flight coordinators.
+ * 
+ * All flight coordinators route is for reviewing historical data of the application, as we want to be able to see those that are even inactive.
+ * 
+ * Asynchronously handles the query to the database thanks to using the connection pool,
+ * the pool.query method is a shrotcut since it handles the connection.release() for us, we
+ * do not have to manually release the connection. https://github.com/mysqljs/mysql#pooling-connections
+ */
+router.get("/getAllFlightCoordinators", async (req, res) => {
     let flightCoordinators = await connectionPool.promise().execute(config.queries.selectAllflightCoordinatorsQuery);
     res.json(flightCoordinators[0]);
 });
+
 
 module.exports = router;
