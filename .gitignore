@@ -39,6 +39,7 @@ testem.log
 /src/app/mock-data.ts
 /assets
 /logs
+/temps
 
 # System files
 .DS_Store
