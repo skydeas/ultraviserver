@@ -79,7 +79,7 @@ router.get("/getAllOpHazardFormById/:id", auth.authenticateRequest(60), async (r
     // now get a Promise wrapped instance of that connectionPool
     
     let response = await connectionPool.promise().execute(config.queries.getAllOpHazardFormId, [req.params.id]);
-    console.log(response)
+    
     // The response is in the format of ([data],[buff]); We will return both since we handle taking only the data in the role service
     res.json(response[0]?.[0]);
 });
